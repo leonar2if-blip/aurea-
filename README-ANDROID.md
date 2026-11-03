@@ -2,15 +2,22 @@
 
 ## Compilar el APK (desde el móvil, solo con el navegador)
 1. En GitHub crea un repositorio **privado** (la firma debug va dentro del repo).
-2. "Add file → Upload files" y sube **estos 8 archivos juntos** (selección múltiple):
+2. "Add file → Upload files" y sube **estos 9 archivos juntos** (selección múltiple):
    `Aurea.html`, `package.json`, `capacitor.config.json`, `aurea-biometric.js`,
-   `build-www.mjs`, `patch-android.mjs`, `aurea-debug.keystore`, `.gitignore`
+   `build-www.mjs`, `patch-android.mjs`, `aurea-icons.json`, `aurea-debug.keystore`, `.gitignore`
 3. "Add file → Create new file", nombre `.github/workflows/build-apk.yml`
    (al escribir las `/` crea las carpetas) y pega el contenido del archivo del ZIP.
 4. Pestaña **Actions → Compilar APK de Áurea (debug) → Run workflow**.
 5. Al terminar (~5–10 min), dentro de la ejecución, descarga el artefacto **Aurea-debug-apk** (ZIP con el .apk) e instálalo.
 
 El workflow copia `Aurea.html` como `www/index.html` y genera el proyecto Android en cada ejecución.
+`aurea-icons.json` contiene el logo de Áurea ya recortado para todas las densidades de Android (mipmap + icono adaptativo);
+`patch-android.mjs` lo instala y configura `android:icon` / `android:roundIcon` en el AndroidManifest.
+
+## Bloqueo de la aplicación
+Ajustes → Seguridad y privacidad → Bloqueo de la aplicación. Con el bloqueo activado, Áurea pide la verificación del teléfono
+al abrirse y **cada vez** que sales de ella (segundo plano) y vuelves. Navegar dentro de Áurea no la pide.
+Abrir el selector de archivos (importar copia, adjuntar a una nota) cuenta como salir de Áurea.
 
 ## Actualizar Áurea sin perder datos
 1. Sustituye `Aurea.html` en el repo (mismo nombre) → commit.
