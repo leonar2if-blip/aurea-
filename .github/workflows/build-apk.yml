@@ -12,37 +12,47 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
-      - uses: actions/setup-java@v4
+      - name: Configurar Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - uses: android-actions/setup-android@v3
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
         with:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
-      - name: Aceptar licencias
-        run: yes | sdkmanager --licenses >/dev/null 2>&1 || true
+      - name: Aceptar licencias Android
+        run: |
+          set +o pipefail
+          yes | sdkmanager --licenses
+          set -o pipefail
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Instalar dependencias
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
-      - name: Preparar web
+      - name: Preparar aplicación web
         run: npm run build:web
 
       - name: Generar proyecto Android
         run: |
-          if [ ! -d android ]; then npx --no-install cap add android; fi
+          if [ ! -d android ]; then
+            npx --no-install cap add android
+          fi
 
       - name: Configurar versión
         run: node patch-android.mjs
@@ -52,11 +62,11 @@ jobs:
       - name: Sincronizar Capacitor
         run: npx --no-install cap sync android
 
-      - name: Verificar plugins y assets
+      - name: Verificar plugins y archivos
         run: |
           npx --no-install cap ls android | tee plugins.txt
-          grep -q capacitor-biometric-auth plugins.txt
-          grep -q '@capacitor/app' plugins.txt
+          grep -q "capacitor-biometric-auth" plugins.txt
+          grep -q "@capacitor/app" plugins.txt
           grep -q 'id="lock"' android/app/src/main/assets/public/index.html
           test -f android/app/src/main/assets/public/aurea-biometric.js
 
@@ -68,9 +78,10 @@ jobs:
         run: |
           VER=$(node -p "require('./package.json').version")
           cp android/app/build/outputs/apk/debug/app-debug.apk \
-             "Aurea-${VER}-build${{ github.run_number }}-debug.apk"
+            "Aurea-${VER}-build${{ github.run_number }}-debug.apk"
 
-      - uses: actions/upload-artifact@v4
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
         with:
           name: Aurea-debug-apk
           path: Aurea-*-debug.apk
