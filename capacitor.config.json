@@ -1,0 +1,8 @@
+{
+  "appId": "com.leonar2if.aurea",
+  "appName": "Áurea",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

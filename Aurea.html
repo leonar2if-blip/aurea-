@@ -83,7 +83,23 @@ h2{font-size:36px;line-height:1.05;margin:22px 0 6px}
 h3{font-size:24px;margin:0 0 8px}.em p{color:var(--mu);margin:0 0 22px}
 .pill{border:0;background:var(--ink);color:var(--bg);padding:12px 26px;border-radius:99px;font-weight:600}
 @media(prefers-reduced-motion:reduce){.ring,.o .i{animation:none}}
-</style></head><body>
+</style>
+<style id="lock-css">
+/* Bloqueo de la aplicación: usa las mismas variables de color del tema */
+#lock{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center;background:var(--nz),radial-gradient(120% 55% at 15% 0,var(--gl),transparent 60%),var(--bg);color:var(--ink)}
+#lock.on{display:flex}
+.lki{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px}
+.lki img{width:72px;height:72px;border-radius:20px;display:block}
+.lki .sm{margin:0;min-height:2.8em}
+#lock .pill{width:auto;margin-top:8px;padding:13px 30px}
+#lock .pill:disabled{opacity:.5}
+.sw{width:46px;height:28px;border-radius:99px;border:1px solid var(--ln);background:var(--sf);position:relative;padding:0;flex:none;transition:background .25s,border-color .25s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--mu);transition:transform .25s cubic-bezier(.2,.9,.3,1),background .25s}
+.sw[aria-checked="true"]{background:var(--ac);border-color:var(--ac)}
+.sw[aria-checked="true"]::after{transform:translateX(18px);background:var(--bg)}
+.sw:disabled{opacity:.45;cursor:default}
+</style>
+</head><body>
 <svg width="0" height="0" style="position:absolute"><filter id="goo" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur in="SourceGraphic" stdDeviation="7"/><feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 18 -8"/></filter></svg>
 <div id="bn" hidden></div>
 <div id="app">
@@ -103,6 +119,93 @@ h3{font-size:24px;margin:0 0 8px}.em p{color:var(--mu);margin:0 0 22px}
 <div id="orbit"></div><div id="sc"></div><div id="sh"></div><div id="ts"></div>
 </div>
 <div id="mod"></div>
+<div id="lock" role="dialog" aria-modal="true" aria-label="Áurea bloqueada"><div class="lki"><img id="lkl" alt="" width="72" height="72"><div class="nm" style="font-size:30px">Áurea</div><p class="sm" id="lkm"></p><button class="pill" id="lkb" type="button">Desbloquear</button></div></div>
+<script src="aurea-biometric.js"></script>
+<script>
+/* ===== Áurea · Bloqueo de la aplicación =====
+   La verificación la hace Android (BiometricPrompt) a través del plugin
+   @aparajita/capacitor-biometric-auth, expuesto como window.AureaNative por
+   aurea-biometric.js. Áurea NO guarda ni lee ningún PIN: solo recuerda si el
+   bloqueo está activado (localStorage 'aurea.lock'). */
+(function(){'use strict';
+var KEY='aurea.lock',SS='aurea.lk.',GRACE=30000,STALE=90000;
+var $i=function(i){return document.getElementById(i)},el=$i('lock'),msg=$i('lkm'),btn=$i('lkb'),appEl=$i('app'),modEl=$i('mod');
+var LK={on:0,locked:0,cover:0,busy:0,busyAt:0,quiet:0,away:0,act:1,err:''};
+var M={userCancel:'Cancelaste la verificación.',systemCancel:'El sistema canceló la verificación.',appCancel:'Verificación cancelada.',authenticationFailed:'No se reconoció tu identidad.',biometryLockout:'Demasiados intentos. Espera un momento o usa el PIN, patrón o contraseña del teléfono.',biometryNotAvailable:'Este teléfono no tiene huella ni bloqueo de pantalla disponibles.',biometryNotEnrolled:'No hay huella registrada ni bloqueo de pantalla en este teléfono.',passcodeNotSet:'Este teléfono no tiene bloqueo de pantalla. Actívalo en los ajustes de Android.',noDeviceCredential:'Este teléfono no tiene bloqueo de pantalla. Actívalo en los ajustes de Android.',noapi:'No se pudo cargar la verificación del teléfono. Cierra y vuelve a abrir Áurea.'},DEF='No se pudo verificar tu identidad.';
+function lsG(k){try{return localStorage.getItem(k)}catch(_){return null}}
+function lsS(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);return true}catch(_){return false}}
+function ssG(k){try{return sessionStorage.getItem(SS+k)}catch(_){return null}}
+function ssS(k,v){try{v==null?sessionStorage.removeItem(SS+k):sessionStorage.setItem(SS+k,v)}catch(_){}}
+var NAT=function(){try{var c=window.Capacitor;return !!(c&&c.isNativePlatform&&c.isNativePlatform())}catch(_){return false}};
+var API=function(){return window.AureaNative||null};
+function draw(){
+ el.classList.toggle('on',!!(LK.locked||LK.cover));
+ try{appEl.inert=modEl.inert=!!LK.locked}catch(_){}
+ msg.textContent=LK.locked?(LK.busy?'Verificando…':(LK.err?(M[LK.err]||DEF):'Verifica tu identidad para abrir Áurea.')):'';
+ btn.hidden=!LK.locked;btn.disabled=!!LK.busy;btn.textContent=LK.busy?'Verificando…':'Desbloquear'}
+function auth(reason,sub){
+ var N=API();
+ if(!N||typeof N.authenticate!=='function'){LK.err='noapi';draw();return Promise.resolve(false)}
+ if(LK.busy&&Date.now()-LK.busyAt<STALE)return Promise.resolve(false);
+ LK.busy=1;LK.busyAt=Date.now();LK.err='';draw();
+ return Promise.resolve().then(function(){return N.authenticate({reason:reason,cancelTitle:'Cancelar',allowDeviceCredential:true,androidTitle:'Áurea',androidSubtitle:sub||reason,androidConfirmationRequired:false})})
+  .then(function(){return true},function(e){LK.err=(e&&e.code)||'fail';return false})
+  .then(function(ok){LK.busy=0;LK.quiet=Date.now()+1500;return ok})}
+function unlock(){LK.locked=0;LK.cover=0;LK.err='';LK.away=0;ssS('ok','1');ssS('away',null);draw()}
+function lock(){LK.locked=1;LK.cover=0;LK.err='';ssS('ok',null);draw()}
+function prompt(){
+ if(!LK.locked||(LK.busy&&Date.now()-LK.busyAt<STALE))return;
+ auth('Desbloquea Áurea','Verifica tu identidad para abrir Áurea').then(function(ok){ok?unlock():draw()})}
+/* Segundo plano: no bloquea al navegar entre pantallas internas (eso no cambia la visibilidad);
+   solo bloquea si la app estuvo fuera >= GRACE. Durante la verificación del sistema se ignoran los eventos. */
+function vis(active){
+ if(active===LK.act)return;LK.act=active;
+ if(!LK.on)return;
+ var now=Date.now();
+ if(!active){
+  if(LK.busy)return;
+  LK.away=now;ssS('away',String(now));
+  if(!LK.locked){LK.cover=1;draw()}
+ }else{
+  if(LK.busy)return;
+  LK.cover=0;
+  if(LK.locked){draw();if(now>=LK.quiet)setTimeout(prompt,150);return}
+  if(LK.away&&now-LK.away>=GRACE){lock();setTimeout(prompt,150)}
+  else{LK.away=0;ssS('away',null);draw()}}}
+function row(){
+ var nat=NAT()&&!!API(),on=!!LK.on,note=!NAT()?'Disponible solo en la app de Android.':!API()?'No se pudo cargar el módulo de seguridad del teléfono.':on?'Activo. Se vuelve a pedir tras '+GRACE/1000+' s fuera de Áurea.':'Pide tu huella o el PIN, patrón o contraseña del teléfono. Áurea no guarda ninguna credencial.';
+ return '<div class="fl">Seguridad y privacidad</div><div class="kv" style="align-items:center;gap:14px"><div class="g"><div class="t">Bloqueo de la aplicación</div><div class="sm">'+note+'</div></div><button type="button" class="sw" role="switch" aria-checked="'+(on?'true':'false')+'" data-lock="1" aria-label="Bloqueo de la aplicación"'+(nat?'':' disabled')+'></button></div>'}
+function refresh(){try{if(typeof redraw==='function'&&V&&V.k==='set'&&!V.sub)redraw()}catch(_){}}
+function say(m){try{toast(m)}catch(_){}}
+function toggle(){
+ if(LK.busy&&Date.now()-LK.busyAt<STALE)return Promise.resolve();
+ var N=API();
+ if(!NAT()||!N){say('El bloqueo solo está disponible en la app de Android');return Promise.resolve()}
+ var turningOn=!LK.on,pre=Promise.resolve(true);
+ if(turningOn&&typeof N.check==='function')pre=Promise.resolve().then(function(){return N.check()}).then(function(c){return !!(c&&(c.isAvailable||c.deviceIsSecure))},function(){return true});
+ return pre.then(function(can){
+  if(!can){say('Primero activa un bloqueo de pantalla o una huella en los ajustes de Android');return}
+  return auth(turningOn?'Confirma para activar el bloqueo':'Confirma para desactivar el bloqueo',turningOn?'Activar el bloqueo de Áurea':'Desactivar el bloqueo de Áurea').then(function(ok){
+   if(ok){
+    if(turningOn){if(!lsS(KEY,'1')){say('No se pudo guardar el ajuste');return}LK.on=1;ssS('ok','1');say('Bloqueo activado')}
+    else{lsS(KEY,null);LK.on=0;LK.locked=0;LK.cover=0;ssS('ok',null);ssS('away',null);say('Bloqueo desactivado')}
+   }else{
+    var c=LK.err;say(c==='userCancel'||c==='systemCancel'||c==='appCancel'?(turningOn?'No se activó el bloqueo':'El bloqueo sigue activado'):(M[c]||DEF))}
+   draw();refresh()})})}
+/* Arranque: si el bloqueo está activado, la pantalla se cubre ANTES de que se vea nada */
+$i('lkl').src=(document.querySelector('.lg')||{}).src||'';
+LK.on=lsG(KEY)==='1';
+if(LK.on){
+ var away=+ssG('away')||0,ok=ssG('ok')==='1';   /* recarga interna (cambio de día) con la sesión ya desbloqueada: no vuelve a pedir */
+ if(ok&&(!away||Date.now()-away<GRACE)){LK.locked=0;LK.away=0;ssS('away',null)}else{LK.locked=1;ssS('ok',null)}
+ draw();
+ if(LK.locked)setTimeout(prompt,500)}
+btn.onclick=prompt;
+document.addEventListener('visibilitychange',function(){vis(!document.hidden)});
+try{var A=API();if(A&&typeof A.onState==='function')A.onState(vis)}catch(_){}
+window.AureaLock={row:row,toggle:toggle,isOn:function(){return !!LK.on}};
+})();
+</script>
 <script>
 const P={tasks:"M5 12.5l4.5 4.5L19 7.5",habits:"M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4",cal:"M4 7h16v13H4zM4 11h16M8 3v4M16 3v4",notes:"M6 3h9l4 4v14H6zM9 12h7M9 16h5",routines:"M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM12 3v2M12 19v2M3 12h2M19 12h2M6 6l1.4 1.4M16.6 16.6L18 18M18 6l-1.4 1.4M7.4 16.6L6 18",goals:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",projects:"M12 3l9 5-9 5-9-5zM3 13l9 5 9-5",people:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M17 11a2.5 2.5 0 1 0 0-5M21 19c0-2.5-1.6-4.5-4-5",health:"M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z",learn:"M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z",stats:"M5 20V11M12 20V5M19 20v-7",review:"M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5",focus:"M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2.5 2M9 2h6",plus:"M12 5v14M5 12h14",home:"M4 11l8-7 8 7v9h-5v-6H9v6H4z",mods:"M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z",trash:"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6",arch:"M3 5h18v4H3zM5 9v10h14V9M10 13h4",pin:"M9 4h6l-1 6 3 3H7l3-3zM12 13v7",diary:"M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 9h6M9 13h4",money:"M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l2-3h12M16 14h2",set:"M4 7h10M18 7h2M4 17h2M10 17h10M16 5v4M8 15v4",moon:"M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z",sun:"M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM12 2v2M12 20v2M2 12h2M20 12h2",back:"M15 5l-7 7 7 7"};
 const MODS={tasks:["Tareas","Tareas"],habits:["Hábitos","Hábitos"],cal:["Calendario","Calendario"],notes:["Notas","Notas"],diary:["Diario","Diario"],money:["Dinero","Dinero"],routines:["Rutinas y modos","Rutinas"],projects:["Proyectos","Proyectos"]};
@@ -336,7 +439,7 @@ mod.addEventListener('pointerdown',e=>{if(e.target.closest('#pk'))e.preventDefau
 R.set=()=>{const c=ALL().map(a=>a.length),ntf='Notification' in window?Notification.permission:'no';
  if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(r=>{const el=$('#stq');if(el)el.textContent='Espacio usado: '+sz(r.usage||0)}).catch(()=>{});
  return hd('Perfil y configuración','Tus datos viven solo en este dispositivo',0)+`<div class="brand"><img src="${$('.lg').src}" alt="" width="64" height="64"><div><div class="nm" style="font-size:26px">Áurea</div><div class="sm">Organización integral de la vida</div></div></div><div class="fl">Apariencia</div><div class="seg"><button data-th="0"${dk?'':' class="on"'}>Claro</button><button data-th="1"${dk?' class="on"':''}>Oscuro</button></div>`
- +`<div class="fl">Almacenamiento</div><p class="sm" style="margin:0">${STO.ok?'IndexedDB activa'+(STO.per?' · protegida contra borrado automático':' · el navegador podría liberarla si falta espacio'):'Sin almacenamiento persistente'+(STO.err?' ('+esc(STO.err)+')':'')}</p><p class="sm" id="stq" style="margin:2px 0 0"></p><p class="sm" style="margin:2px 0 0">${c[0]} tareas · ${c[1]} hábitos · ${c[2]} eventos · ${c[3]} notas · ${c[4]} entradas de diario · ${c[5]} movimientos · ${c[8]} sesiones de enfoque · ${c[9]} objetivos</p>`
+ +(window.AureaLock?AureaLock.row():'')+`<div class="fl">Almacenamiento</div><p class="sm" style="margin:0">${STO.ok?'IndexedDB activa'+(STO.per?' · protegida contra borrado automático':' · el navegador podría liberarla si falta espacio'):'Sin almacenamiento persistente'+(STO.err?' ('+esc(STO.err)+')':'')}</p><p class="sm" id="stq" style="margin:2px 0 0"></p><p class="sm" style="margin:2px 0 0">${c[0]} tareas · ${c[1]} hábitos · ${c[2]} eventos · ${c[3]} notas · ${c[4]} entradas de diario · ${c[5]} movimientos · ${c[8]} sesiones de enfoque · ${c[9]} objetivos</p>`
  +`<div class="fl">Copia de seguridad</div><p class="sm" style="margin:0 0 14px">Última copia: ${LASTB?fmtD(LASTB):'nunca'}</p><div class="l2b"><button class="pill" data-ex="1">Exportar copia</button><button class="pill gh" data-im="1">Importar copia</button></div><input type="file" id="f-imp" accept=".json,application/json" hidden>`
  +`<div class="fl">Avisos</div><p class="sm" style="margin:0 0 10px">Los recordatorios aparecen dentro de la app mientras está abierta. Avisos del sistema: ${ntf=='granted'?'activados':ntf=='denied'?'bloqueados por el navegador':ntf=='no'?'no disponibles en este navegador':'sin activar'}.</p>${ntf=='default'?'<button class="pill gh" data-ntf="1">Activar avisos del sistema</button>':''}`
  +`<div class="fl">Datos</div><button class="lk" data-snap="1" style="padding:6px 0;display:block;text-align:left">Restaurar estado anterior a la última importación o borrado</button><button class="lk" data-wipe="1" style="padding:12px 0;display:block;text-align:left;color:#d0645b">Borrar todos los datos</button>`};
@@ -529,6 +632,7 @@ async function wipe(){try{await snapshot()}catch(_){}await applyData({},[],null)
 async function restoreSnap(){try{const s=await prom(db.transaction('snap').objectStore('snap').get('last'));if(!s)return toast('No hay punto de restauración');await applyData(s.data,s.files,s.prefs);toast('Estado anterior restaurado')}catch(e){toast('No se pudo restaurar')}}
 const setDk=v=>{dk=v;PREF.dk=v;th();save()};
 function act3(e){const q=s=>e.target.closest(s);
+ if(q('[data-lock]')){window.AureaLock&&AureaLock.toggle();return true}
  if(q('[data-ex]')){exportData();return true}
  if(q('[data-im]')){$('#f-imp').click();return true}
  if(q('[data-wipe]')){ask('Borrar todos los datos','Se eliminarán tareas, hábitos, eventos, notas y diario de este dispositivo. Se guarda un punto de restauración.','Borrar',wipe);return true}
