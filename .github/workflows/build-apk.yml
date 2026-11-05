@@ -54,25 +54,57 @@ jobs:
             npx --no-install cap add android
           fi
 
-      - name: Configurar versión
+      - name: Configurar versión e icono
         run: node patch-android.mjs
         env:
           VERSION_CODE: ${{ github.run_number }}
 
+      - name: Configurar avisos, sonidos y permisos
+        run: node patch-android-extras.mjs
+
       - name: Sincronizar Capacitor
         run: npx --no-install cap sync android
 
-      - name: Verificar plugins y archivos
+      - name: Verificar plugins, bloqueo, icono y avisos
         run: |
           npx --no-install cap ls android | tee plugins.txt
           grep -q "capacitor-biometric-auth" plugins.txt
           grep -q "@capacitor/app" plugins.txt
+          grep -q "@capacitor/local-notifications" plugins.txt
+          grep -q "@capacitor/filesystem" plugins.txt
+          grep -q "@capacitor/share" plugins.txt
           grep -q 'id="lock"' android/app/src/main/assets/public/index.html
+          grep -q "AureaLock" android/app/src/main/assets/public/index.html
+          grep -q 'src="aurea-features.js"' android/app/src/main/assets/public/index.html
           test -f android/app/src/main/assets/public/aurea-biometric.js
+          test -f android/app/src/main/assets/public/aurea-native.js
+          test -f android/app/src/main/assets/public/aurea-features.js
+          grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' android/app/src/main/AndroidManifest.xml
+          for p in POST_NOTIFICATIONS SCHEDULE_EXACT_ALARM RECEIVE_BOOT_COMPLETED VIBRATE; do
+            grep -q "android.permission.$p" android/app/src/main/AndroidManifest.xml
+          done
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            for n in ic_launcher ic_launcher_round ic_launcher_foreground ic_launcher_background; do
+              test -f "android/app/src/main/res/mipmap-$d/$n.png"
+            done
+            test -f "android/app/src/main/res/drawable-$d/ic_stat_aurea.png"
+          done
+          test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          test -f android/app/src/main/res/raw/aurea_suave.wav
+          test -f android/app/src/main/res/raw/aurea_alarma.wav
 
       - name: Compilar APK debug
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
+
+      - name: Comprobar icono y permisos dentro del APK (informativo)
+        continue-on-error: true
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          unzip -l "$APK" | grep -E "ic_launcher|ic_stat_aurea|aurea_suave|aurea_alarma" || true
+          "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump permissions "$APK" || true
+          "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump xmltree --file AndroidManifest.xml "$APK" | grep -i -E "BOOT_COMPLETED|LocalNotification" || true
 
       - name: Preparar APK
         run: |
