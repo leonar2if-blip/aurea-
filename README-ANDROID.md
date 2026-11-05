@@ -56,3 +56,15 @@ Copias automáticas (diaria/semanal/mensual): se ejecutan al abrir Áurea o volv
 4. Copia el **ID de cliente** y el **Secreto** en Áurea (Ajustes → Google Drive) y pulsa «Vincular cuenta de Google».
    Te mostrará un código: ábrelo en google.com/device, escribe el código y acepta.
 Áurea solo ve la carpeta «Áurea copias» que ella misma crea (ámbito `drive.file`).
+
+## Widgets de pantalla de inicio (versión 1.2.0)
+Archivos nuevos en el repo: `aurea-widgets.js`, `patch-android-widgets.mjs` y la carpeta `android-widgets/` (código Java y recursos). Cambian `aurea-native.js`, `build-www.mjs`, `package.json` y el workflow (que ejecuta `patch-android-widgets.mjs`).
+
+**Widgets**: Mi día, Tareas, Hábitos, Agenda, Enfoque, Agua y Captura rápida. Opcionales (aparecen en el selector solo cuando su módulo tiene datos): Proyectos, Objetivos, Dinero, Diario y Estadísticas. No existen aún widgets de Rutinas, Estado personal ni Relaciones porque esos módulos no existen en Áurea.
+Al añadir un widget se abre su ajuste nativo: tema (automático/claro/oscuro), ocultar información sensible y, en Tareas/Hábitos, qué mostrar. Se reconfigura manteniendo pulsado el widget (Android 9+).
+
+**Cómo se sincroniza** (IndexedDB sigue siendo la única fuente de verdad):
+- La app publica una instantánea de solo lectura en SharedPreferences nativas cada vez que guarda y al pasar a segundo plano.
+- Las acciones de los widgets (completar tarea, registrar hábito, agua, iniciar/pausar enfoque, captura rápida) se encolan y el widget cambia al instante. Áurea las aplica a sus datos al abrirse (o si está abierta, de inmediato) y las confirma. Con Áurea cerrada, los cambios aparecen en la app la próxima vez que la abras.
+- Enlaces profundos `aurea://open/<modulo>[/<id>]` abren la sección o elemento.
+- Android no garantiza actualizaciones instantáneas: además de cada acción se redibuja al cambiar de día, al reiniciar y cada ~30 min como respaldo.

@@ -1,0 +1,65 @@
+    <!-- aurea-widgets:begin -->
+    <receiver android:name="com.leonar2if.aurea.WProviders$MyDay" android:exported="true" android:label="@string/wn_myday">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_myday" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Tasks" android:exported="true" android:label="@string/wn_tasks">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_tasks" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Habits" android:exported="true" android:label="@string/wn_habits">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_habits" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Agenda" android:exported="true" android:label="@string/wn_agenda">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_agenda" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Focus" android:exported="true" android:label="@string/wn_focus">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_focus" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Water" android:exported="true" android:label="@string/wn_water">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_water" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Capture" android:exported="true" android:label="@string/wn_capture">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_capture" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Projects" android:exported="true" android:label="@string/wn_projects" android:enabled="false">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_projects" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Goals" android:exported="true" android:label="@string/wn_goals" android:enabled="false">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_goals" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Money" android:exported="true" android:label="@string/wn_money" android:enabled="false">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_money" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Diary" android:exported="true" android:label="@string/wn_diary" android:enabled="false">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_diary" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WProviders$Stats" android:exported="true" android:label="@string/wn_stats" android:enabled="false">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+        <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_stats" />
+    </receiver>
+    <receiver android:name="com.leonar2if.aurea.WActionReceiver" android:exported="false" />
+    <receiver android:name="com.leonar2if.aurea.WSystemReceiver" android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            <action android:name="android.intent.action.DATE_CHANGED" />
+            <action android:name="android.intent.action.TIME_SET" />
+            <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        </intent-filter>
+    </receiver>
+    <activity android:name="com.leonar2if.aurea.WConfigActivity" android:exported="true" android:theme="@style/AureaWidgetDialog">
+        <intent-filter><action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" /></intent-filter>
+    </activity>
+    <activity android:name="com.leonar2if.aurea.WCaptureActivity" android:exported="false" android:theme="@style/AureaWidgetDialog"
+        android:excludeFromRecents="true" android:taskAffinity="" android:windowSoftInputMode="stateVisible|adjustResize" />
+    <!-- aurea-widgets:end -->

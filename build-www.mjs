@@ -26,13 +26,14 @@ await build({
   logLevel: 'info',
 });
 copyFileSync('aurea-features.js', 'www/aurea-features.js');
+copyFileSync('aurea-widgets.js', 'www/aurea-widgets.js');
 {
   // Se cargan al final del <body>, después del script principal de Aurea.html (que no se modifica)
   let h = readFileSync('www/index.html', 'utf8');
   if (!h.includes('src="aurea-features.js"')) {
     const i = h.lastIndexOf('</body>');
     if (i < 0) throw new Error('Aurea.html no tiene </body>');
-    h = h.slice(0, i) + '<script src="aurea-native.js"></script>\n<script src="aurea-features.js"></script>\n' + h.slice(i);
+    h = h.slice(0, i) + '<script src="aurea-native.js"></script>\n<script src="aurea-features.js"></script>\n<script src="aurea-widgets.js"></script>\n' + h.slice(i);
     writeFileSync('www/index.html', h);
   }
 }
@@ -42,6 +43,6 @@ const js = readFileSync('www/aurea-biometric.js', 'utf8');
 if (!html.includes('src="aurea-biometric.js"')) throw new Error('Aurea.html no carga aurea-biometric.js');
 if (!html.includes('id="lock"')) throw new Error('Aurea.html no contiene la pantalla de bloqueo');
 if (!js.includes('AureaNative')) throw new Error('El puente no expone AureaNative');
-if (!html.includes('src="aurea-native.js"') || !html.includes('src="aurea-features.js"')) throw new Error('No se inyectaron aurea-native.js / aurea-features.js');
+if (!html.includes('src="aurea-native.js"') || !html.includes('src="aurea-features.js"') || !html.includes('src="aurea-widgets.js"')) throw new Error('No se inyectaron aurea-native.js / aurea-features.js / aurea-widgets.js');
 if (!readFileSync('www/aurea-native.js', 'utf8').includes('AureaPlugins')) throw new Error('El puente nativo no expone AureaPlugins');
 console.log('www/ listo: index.html + aurea-biometric.js + aurea-native.js + aurea-features.js');

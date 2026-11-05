@@ -1,6 +1,6 @@
 {
   "name": "aurea",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Áurea — organización integral de la vida (Android)",
   "engines": {
@@ -9,7 +9,8 @@
   "scripts": {
     "build:web": "node build-www.mjs",
     "android:patch": "node patch-android.mjs",
-    "android:extras": "node patch-android-extras.mjs"
+    "android:extras": "node patch-android-extras.mjs",
+    "android:widgets": "node patch-android-widgets.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

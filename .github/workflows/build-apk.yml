@@ -62,6 +62,9 @@ jobs:
       - name: Configurar avisos, sonidos y permisos
         run: node patch-android-extras.mjs
 
+      - name: Instalar widgets nativos
+        run: node patch-android-widgets.mjs
+
       - name: Sincronizar Capacitor
         run: npx --no-install cap sync android
 
@@ -79,6 +82,12 @@ jobs:
           test -f android/app/src/main/assets/public/aurea-biometric.js
           test -f android/app/src/main/assets/public/aurea-native.js
           test -f android/app/src/main/assets/public/aurea-features.js
+          test -f android/app/src/main/assets/public/aurea-widgets.js
+          grep -q 'src="aurea-widgets.js"' android/app/src/main/assets/public/index.html
+          test -f android/app/src/main/java/com/leonar2if/aurea/WRender.java
+          grep -q "registerPlugin(AureaWidgetsPlugin.class)" android/app/src/main/java/com/leonar2if/aurea/MainActivity.java
+          test "$(grep -c 'android.appwidget.provider' android/app/src/main/AndroidManifest.xml)" = "12"
+          grep -q 'android:scheme="aurea"' android/app/src/main/AndroidManifest.xml
           grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
           grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' android/app/src/main/AndroidManifest.xml
           for p in POST_NOTIFICATIONS SCHEDULE_EXACT_ALARM RECEIVE_BOOT_COMPLETED VIBRATE; do

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/w_root" android:layout_width="match_parent" android:layout_height="match_parent">
+    <ImageView android:id="@+id/w_bg" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:scaleType="fitXY" android:src="@drawable/w_bg" android:importantForAccessibility="no"/>
+    <LinearLayout android:id="@+id/w_body" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:orientation="vertical" android:paddingStart="14dp" android:paddingEnd="14dp" android:paddingTop="12dp" android:paddingBottom="10dp">
+        <LinearLayout android:id="@+id/w_head" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:id="@+id/w_icon" android:layout_width="16dp" android:layout_height="16dp" android:importantForAccessibility="no"/>
+            <TextView android:id="@+id/w_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="7dp" android:textSize="11sp" android:fontFamily="sans-serif-medium" android:letterSpacing="0.06" android:maxLines="1" android:ellipsize="end"/>
+            <TextView android:id="@+id/w_aux" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="6dp" android:textSize="11sp" android:fontFamily="sans-serif-medium" android:maxLines="1"/>
+        </LinearLayout>
+        <TextView android:id="@+id/w_big" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="34sp" android:fontFamily="serif" android:maxLines="1" android:ellipsize="end" android:layout_marginTop="2dp"/>
+        <ProgressBar android:id="@+id/w_bar_l" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="6dp"
+            android:layout_marginTop="2dp" android:max="100" android:progressDrawable="@drawable/w_bar_l"/>
+        <ProgressBar android:id="@+id/w_bar_d" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="6dp"
+            android:layout_marginTop="2dp" android:max="100" android:progressDrawable="@drawable/w_bar_d" android:visibility="gone"/>
+        <TextView android:id="@+id/w_sub" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="11sp" android:fontFamily="sans-serif" android:maxLines="1" android:ellipsize="end" android:layout_marginTop="6dp"/>
+        <LinearLayout android:id="@+id/w_next" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="8dp">
+        <TextView android:id="@+id/w_nl" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="9.5sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" android:letterSpacing="0.08"/>
+        <TextView android:id="@+id/w_nt" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="13sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end"/>
+        <TextView android:id="@+id/w_ns" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="10.5sp" android:fontFamily="sans-serif" android:maxLines="1" android:ellipsize="end"/>
+        </LinearLayout>
+        <TextView android:id="@+id/w_empty" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="12sp" android:fontFamily="sans-serif" android:maxLines="3" android:ellipsize="end" android:layout_marginTop="6dp" android:visibility="gone"/>
+    </LinearLayout>
+</FrameLayout>

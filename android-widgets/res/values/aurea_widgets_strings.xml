@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wn_myday">Áurea · Mi día</string>
+    <string name="wd_myday">Fecha, progreso del día, tareas hechas y pendientes y tu próximo compromiso.</string>
+    <string name="wn_tasks">Áurea · Tareas</string>
+    <string name="wd_tasks">Tus próximas tareas prioritarias, con hora y botón para completarlas.</string>
+    <string name="wn_habits">Áurea · Hábitos</string>
+    <string name="wd_habits">Tus hábitos de hoy con registro rápido.</string>
+    <string name="wn_agenda">Áurea · Agenda</string>
+    <string name="wd_agenda">Próximos eventos con su horario y aviso.</string>
+    <string name="wn_focus">Áurea · Enfoque</string>
+    <string name="wd_focus">Temporizador de enfoque: iniciar, pausar y continuar.</string>
+    <string name="wn_water">Áurea · Agua</string>
+    <string name="wd_water">Agua de hoy, meta diaria y registro rápido.</string>
+    <string name="wn_capture">Áurea · Captura rápida</string>
+    <string name="wd_capture">Crea una tarea, una nota o una idea sin abrir Áurea.</string>
+    <string name="wn_projects">Áurea · Proyectos</string>
+    <string name="wd_projects">Proyectos activos con su progreso y próxima fecha límite.</string>
+    <string name="wn_goals">Áurea · Objetivos</string>
+    <string name="wd_goals">Tus objetivos y su avance.</string>
+    <string name="wn_money">Áurea · Dinero</string>
+    <string name="wd_money">Saldo disponible e ingresos y gastos del mes.</string>
+    <string name="wn_diary">Áurea · Diario</string>
+    <string name="wd_diary">Racha de escritura y entradas (nunca muestra el texto).</string>
+    <string name="wn_stats">Áurea · Estadísticas</string>
+    <string name="wd_stats">Tareas de la semana, enfoque de hoy y constancia de hábitos.</string>
+</resources>
