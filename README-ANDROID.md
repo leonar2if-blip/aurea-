@@ -31,3 +31,28 @@ No cambies ni borres `aurea-debug.keystore`; si lo hicieras, Android rechazará 
 ## Tus datos actuales (navegador → app)
 La app Android tiene su propio almacenamiento: no ve lo que hay en el navegador.
 En la versión web: Ajustes → Exportar copia. En la app: Ajustes → Importar copia.
+
+## Recordatorios del teléfono, copias .aurea y Google Drive (versión 1.1.0)
+Archivos nuevos que hay que subir a la raíz del repositorio (junto a los de antes):
+`aurea-features.js`, `aurea-native.js`, `aurea-android-assets.json`, `patch-android-extras.mjs`.
+Cambian `package.json` (3 plugins oficiales de Capacitor), `capacitor.config.json`, `build-www.mjs` y el workflow.
+`Aurea.html` dibuja la pantalla de Ajustes y llama a `AureaFeatures.ui` (en `aurea-features.js`) para las secciones de recordatorios, copias y Drive; `build-www.mjs` carga `aurea-features.js` al final de la página. Los dos archivos deben ir siempre juntos.
+
+**Recordatorios**: Ajustes → Recordatorios del teléfono. Pulsa «Permitir notificaciones» (y «alarmas exactas» si Android lo pide).
+Se programan los avisos de eventos, tareas y hábitos (campo «aviso») de los próximos 30 días; se refrescan al abrir/editar Áurea
+y Android los recupera tras reiniciar. Si pasas más de 30 días sin abrir Áurea, los avisos se agotan hasta que la abras.
+Los botones «Posponer» y «Hecha» del aviso abren Áurea un instante para aplicarse.
+
+**Copias .aurea**: Ajustes → Copias de seguridad. «Crear copia» abre el menú de compartir de Android (guárdala en Archivos, Drive, etc.).
+Con «Cifrar copias» se usa AES-256-GCM; la contraseña no se guarda ni se puede recuperar. «Restaurar desde archivo» verifica la
+integridad, pide confirmación y guarda un punto de restauración antes de reemplazar nada.
+Copias automáticas (diaria/semanal/mensual): se ejecutan al abrir Áurea o volver a ella, no con la app cerrada.
+
+**Google Drive** (configuración única, ~10 min, en https://console.cloud.google.com):
+1. Crea un proyecto → «APIs y servicios» → Biblioteca → activa **Google Drive API**.
+2. «Pantalla de consentimiento de OAuth» → tipo **Externo** → añade el ámbito `.../auth/drive.file` y tu correo como usuario de prueba.
+   Después pulsa **«Publicar aplicación»** (estado «En producción»): en modo «Pruebas» Google caduca la vinculación cada 7 días.
+3. «Credenciales» → Crear credenciales → ID de cliente de OAuth → tipo **«TV y dispositivos de entrada limitada»**.
+4. Copia el **ID de cliente** y el **Secreto** en Áurea (Ajustes → Google Drive) y pulsa «Vincular cuenta de Google».
+   Te mostrará un código: ábrelo en google.com/device, escribe el código y acepta.
+Áurea solo ve la carpeta «Áurea copias» que ella misma crea (ámbito `drive.file`).
