@@ -68,3 +68,34 @@ Al añadir un widget se abre su ajuste nativo: tema (automático/claro/oscuro), 
 - Las acciones de los widgets (completar tarea, registrar hábito, agua, iniciar/pausar enfoque, captura rápida) se encolan y el widget cambia al instante. Áurea las aplica a sus datos al abrirse (o si está abierta, de inmediato) y las confirma. Con Áurea cerrada, los cambios aparecen en la app la próxima vez que la abras.
 - Enlaces profundos `aurea://open/<modulo>[/<id>]` abren la sección o elemento.
 - Android no garantiza actualizaciones instantáneas: además de cada acción se redibuja al cambiar de día, al reiniciar y cada ~30 min como respaldo.
+
+## Seguridad, copias externas y permisos (versión 1.3.0)
+Archivos nuevos en el repo: `patch-android-backup.mjs`, `android-patch-main.mjs` y `android-backup/java/AureaBackupsPlugin.java`. Cambian `Aurea.html` (solo el bloqueo y dos textos de Ajustes), `aurea-features.js`, `aurea-native.js`, `patch-android-widgets.mjs`, `package.json` y el workflow.
+
+**Bloqueo**: con el bloqueo activado, Áurea se bloquea al instante al pasar a segundo plano o cambiar de aplicación y pide huella o el PIN/patrón del teléfono (BiometricPrompt de Android; Áurea no guarda ningún PIN). Excepción deliberada de máx. 60 s cuando Áurea abre una pantalla del sistema (permisos, selector de archivos, compartir, navegador para vincular Drive): al volver no pide autenticación; si sales a otra app durante esa ventana, queda bloqueada igualmente al cabo de ese tiempo.
+
+**Copias locales**: «Crear copia» y las automáticas se guardan en `Descargas/ÁUREA/` (Android 10+: MediaStore, sin permiso; Android 7–9: permiso de almacenamiento, que se pide al crear la primera copia manual). Sobreviven a desinstalar. Las copias antiguas del almacenamiento privado se mueven solas a esa carpeta. Tras desinstalar y reinstalar, Android no deja a la app nueva *listar* los archivos de la anterior: usa **Elegir archivo de copia…** (selector del sistema, abre en `Descargas/ÁUREA`).
+**Restaurar**: «Elegir archivo de copia…» / «Restaurar» abren un archivo `.aurea` (pide contraseña si está cifrado) y antes guardan un punto interno. «Deshacer la última importación, restauración o borrado» (Datos) es otra función: vuelve a ese punto interno y no abre archivos.
+
+**Permisos**: nada se pide al iniciar. Notificaciones: una sola pregunta explicada cuando ya hay algo con aviso (o desde Ajustes → Permisos). Alarmas exactas: solo desde Ajustes. Almacenamiento: solo Android ≤ 9 y al guardar la primera copia manual.
+
+**Google Drive**: sigue usando el flujo OAuth «dispositivos de entrada limitada» (API REST real, ámbito `drive.file`, carpeta «Áurea copias»); requiere el ID de cliente y el secreto de tu proyecto de Google Cloud (ver arriba). Guardar, listar y restaurar funcionan sin SDK de Google.
+
+## Iniciar sesión con Google para las copias en Drive (sin ID ni secreto en la app)
+En Android, Ajustes → Copias de seguridad → Google Drive → **Iniciar sesión con Google**: eliges tu cuenta, se activa la copia diaria y se sube la primera copia. Áurea solo ve los archivos que ella crea (ámbito `drive.file`). El usuario no escribe nada.
+Configuración única del desarrollador (Google Cloud, no hace falta secreto):
+1. Activa **Google Drive API** en tu proyecto y configura la pantalla de consentimiento (publícala para que no caduque).
+2. Credenciales → ID de cliente de OAuth → tipo **Android**: paquete `com.leonar2if.aurea` y huella SHA-1 de la firma de `aurea-debug.keystore`:
+   `AB:E5:38:26:3E:61:94:A8:82:23:2A:29:37:07:F5:7B:A7:B3:F4:73`
+   (Si más adelante firmas con otra clave, añade también su SHA-1.)
+Sin ese cliente Android, Google rechaza el inicio de sesión («Google: …» en un aviso). El flujo con ID de cliente + secreto queda solo para la versión web.
+
+## Fase 2 · Rutinas, avisos y Samsung (v1.4.0)
+
+- **Rutinas** (módulo «Rutinas y modos»): pasos ordenados, días/hora, vínculos a tareas, hábitos y eventos existentes (sin duplicarlos), ejecución diaria, historial con copia de los pasos, racha y cumplimiento. Nuevos almacenes `routines` y `routruns` (IndexedDB v4, `APP_V=6`); entran solos en copias locales y Drive.
+- **Avisos Android**: `aurea-features.js` programa el inicio de cada rutina (y opcionalmente cada paso) con acción «Empezar».
+- **Enlaces**: `aurea://open/routines/<id>` (editor) y `aurea://open/routines/<id>/start` (empezar). Atajos dinámicos del icono para las rutinas activas.
+- **Plugin nativo** `AureaRoutines` (`android-routines/java`, instalado con `patch-android-routines.mjs`): estado de avisos/alarmas exactas/batería, ajustes del sistema y atajos. `aurea-automation.js` lo expone a la guía.
+- **Samsung Modos y rutinas**: no existe API pública para crearlos, leerlos ni activarlos desde otra app. La conexión es por notificación: con «Notificación para Samsung» activado, Áurea publica una notificación silenciosa (canal `aurea_auto`) con la palabra clave `AUREA_INICIO <rutina>` a la hora de inicio y `AUREA_FIN <rutina>` al completarla; una rutina de Samsung con la condición «Notificación recibida» (app Áurea + palabra clave) la lee y hace lo que el usuario configure. La guía en pantalla explica los pasos y permite enviar una notificación de prueba. Los enlaces/atajos sirven para apps como Tasker o MacroDroid.
+- **Batería**: en Samsung hay que añadir Áurea a «Apps sin suspender» para que los avisos lleguen puntuales.
+- No verificado en dispositivo real ni compilado aquí (sin SDK de Android): el código Java sólo se comprobó sintácticamente.

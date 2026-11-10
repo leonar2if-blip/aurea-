@@ -14,5 +14,8 @@ window.AureaPlugins = {
   share: Share,
   http: CapacitorHttp,
   app: App, // enlaces profundos (aurea://open/...) de los widgets
+  gauth: registerPlugin('AureaGoogleAuth'), // inicio de sesión nativo con Google para copias en Drive (solo Android)
+  backups: registerPlugin('AureaBackups'), // plugin nativo propio: copias en Descargas/ÁUREA y selector de archivos (solo Android)
+  routines: registerPlugin('AureaRoutines'), // plugin nativo propio: estado de avisos/batería, ajustes y atajos de rutinas (solo Android)
   widgets: registerPlugin('AureaWidgets'), // plugin nativo propio: widgets de pantalla de inicio (solo Android)
 };

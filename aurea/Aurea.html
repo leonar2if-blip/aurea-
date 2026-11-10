@@ -169,6 +169,16 @@ details.adv>div>.fl:first-child{margin-top:14px}
 .pmv .sx{font-size:16px;line-height:1.1;padding:0 6px}.pmv .sx:disabled{opacity:.25}
 .pjl{display:flex;flex-wrap:wrap;gap:8px}
 .pbar i{background:var(--c,var(--ac))}
+/* === Rutinas === */
+.rsp{border:1px solid var(--ln);border-radius:16px;padding:10px 12px;margin:8px 0;background-color:var(--sf)}
+.rsh{display:flex;align-items:center;gap:8px}
+.rsh b{font:400 15px Fraunces,Georgia,serif;color:var(--mu);width:18px;text-align:center;flex:none}
+.rsh input{flex:1;min-width:0;margin:0}
+.rsp .two{margin-top:8px}.rsp>select{margin-top:8px}
+.rst.skp .t{opacity:.45;text-decoration:line-through}
+.rdays{display:flex;gap:6px;flex-wrap:wrap}
+.rdays button{width:40px;height:40px;border-radius:50%;border:1px solid var(--ln);background:none;color:var(--mu);font:inherit}
+.rdays button.on{border-color:var(--ink);color:var(--ink)}
 </style>
 <style id="lock-css">
 #lock{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center;background:var(--nz),radial-gradient(120% 55% at 15% 0,var(--gl),transparent 60%),var(--bg);color:var(--ink)}
@@ -210,7 +220,7 @@ details.adv>div>.fl:first-child{margin-top:14px}
 <script src="aurea-biometric.js"></script>
 <script>
 (function(){'use strict';
-var KEY='aurea.lock',SS='aurea.lk.',GRACE=30000,STALE=90000;
+var KEY='aurea.lock',SS='aurea.lk.',GRACE=0,STALE=90000,EXT=0;/* GRACE=0: se bloquea en cuanto Áurea sale de primer plano. EXT: ventana corta para pantallas del sistema que Áurea abre a propósito (selector de archivos, permisos, compartir). */
 var $i=function(i){return document.getElementById(i)},el=$i('lock'),msg=$i('lkm'),btn=$i('lkb'),appEl=$i('app'),modEl=$i('mod');
 var LK={on:0,locked:0,cover:0,busy:0,busyAt:0,quiet:0,away:0,act:1,err:''};
 var M={userCancel:'Cancelaste la verificación.',systemCancel:'El sistema canceló la verificación.',appCancel:'Verificación cancelada.',authenticationFailed:'No se reconoció tu identidad.',biometryLockout:'Demasiados intentos. Espera un momento o usa el PIN, patrón o contraseña del teléfono.',biometryNotAvailable:'Este teléfono no tiene huella ni bloqueo de pantalla disponibles.',biometryNotEnrolled:'No hay huella registrada ni bloqueo de pantalla en este teléfono.',passcodeNotSet:'Este teléfono no tiene bloqueo de pantalla. Actívalo en los ajustes de Android.',noDeviceCredential:'Este teléfono no tiene bloqueo de pantalla. Actívalo en los ajustes de Android.',noapi:'No se pudo cargar la verificación del teléfono. Cierra y vuelve a abrir Áurea.'},DEF='No se pudo verificar tu identidad.';
@@ -245,15 +255,17 @@ function vis(active){
  if(!active){
   if(LK.busy)return;
   LK.away=now;ssS('away',String(now));
-  if(!LK.locked){LK.cover=1;draw()}
+  if(now<EXT){if(!LK.locked){LK.cover=1;draw()}}/* salida prevista por Áurea: solo se cubre la pantalla */
+  else if(!LK.locked){lock()}
  }else{
   if(LK.busy)return;
   LK.cover=0;
   if(LK.locked){draw();if(now>=LK.quiet)setTimeout(prompt,150);return}
+  if(EXT&&now<EXT&&!LK.locked){EXT=0;LK.away=0;ssS('away',null);draw();return}
   if(LK.away&&now-LK.away>=GRACE){lock();setTimeout(prompt,150)}
   else{LK.away=0;ssS('away',null);draw()}}}
 function row(){
- var nat=NAT()&&!!API(),on=!!LK.on,note=!NAT()?'Disponible solo en la app de Android.':!API()?'No se cargó el puente biométrico. Comprueba que aurea-biometric.js esté incluido en la app.':on?'Activo. Se vuelve a pedir tras '+GRACE/1000+' s fuera de Áurea.':'Solicita la autenticación del dispositivo. No guarda tu PIN ni tus credenciales.';
+ var nat=NAT()&&!!API(),on=!!LK.on,note=!NAT()?'Disponible solo en la app de Android.':!API()?'No se cargó el puente biométrico. Comprueba que aurea-biometric.js esté incluido en la app.':on?'Activo. Áurea se bloquea al instante al pasar a segundo plano o cambiar de aplicación y pide tu huella o el PIN del teléfono.':'Solicita la autenticación del dispositivo. No guarda tu PIN ni tus credenciales.';
  return '<div class="fl">Seguridad y privacidad</div><div class="kv" style="align-items:center;gap:14px"><div class="g"><div class="t">Bloqueo de la aplicación</div><div class="sm">'+note+'</div></div><button type="button" class="sw" role="switch" aria-checked="'+(on?'true':'false')+'" data-lock="1" aria-label="Bloqueo de la aplicación"'+(nat?'':' disabled')+'></button></div>'}
 function refresh(){try{if(typeof redraw==='function'&&V&&V.k==='set'&&!V.sub)redraw()}catch(_){}}
 function say(m){try{toast(m)}catch(_){}}
@@ -282,7 +294,7 @@ if(LK.on){
 btn.onclick=prompt;
 document.addEventListener('visibilitychange',function(){vis(!document.hidden)});
 try{var A=API();if(A&&typeof A.onState==='function')A.onState(vis)}catch(_){}
-window.AureaLock={row:row,toggle:toggle,isOn:function(){return !!LK.on}};
+window.AureaLock={row:row,toggle:toggle,isOn:function(){return !!LK.on},expect:function(ms){EXT=Date.now()+Math.max(0,Math.min(+ms||0,60000))},isLocked:function(){return !!LK.locked}};
 })();
 </script>
 <script>
@@ -459,7 +471,7 @@ const hArch=()=>hd('Archivados','Tu historial se conserva',0)+(H.filter(h=>h.ar)
 function askH(){sh.dataset.s='h';sh.innerHTML='<h3>Nuevo hábito</h3><input id="qi" placeholder="Ej. Leer 20 páginas" autocomplete="off"><button class="pill" id="qs">Guardar</button>';sh.classList.add('open');sc.classList.add('open');setTimeout(()=>$('#qi')?.focus(),350)}
 function act(e){const q=s=>e.target.closest(s);
  if(Date.now()-swd<350&&q('.sr,.cg'))return true;if(act2(e))return true;
- if(q('.bk')){if(V.sub){if(V.sub=='td'&&!T[V.i].t.trim())T.splice(V.i,1);if(V.sub=='gl'&&!GL[V.i].n.trim())GL.splice(V.i,1);if(V.sub=='pd'&&!PJ[V.i].n.trim())PJ.splice(V.i,1);if(V.sub=='mv'&&!MV[V.i].a)MV.splice(V.i,1);if(V.sub=='bg'&&!BD[V.i].lim)BD.splice(V.i,1);if(V.sub=='sg'&&!SG[V.i].n.trim()&&!SG[V.i].goal)SG.splice(V.i,1);if(V.sub=='hd'&&!H[V.i].n.trim())H.splice(V.i,1);if(V.sub=='dd'&&!DI[V.i].parts.some(p=>typeof p!='string'||p.trim()))DI.splice(V.i,1);if(V.sub=='ed'&&!E[V.i].t.trim())E.splice(V.i,1);if(V.sub=='nd'){const n=N[V.i];if(!n.t.trim()&&!n.b.trim()&&!n.items.length)N.splice(V.i,1)}V.sub=null;if(V.back)V=V.back;else if(V.from)V={k:V.from,sub:null,i:0};redraw();return true}return false}
+ if(q('.bk')){if(V.sub){if(V.sub=='td'&&!T[V.i].t.trim())T.splice(V.i,1);if(V.sub=='gl'&&!GL[V.i].n.trim())GL.splice(V.i,1);if(V.sub=='pd'&&!PJ[V.i].n.trim())PJ.splice(V.i,1);if(V.sub=='rd'&&!RT[V.i].n.trim())RT.splice(V.i,1);if(V.sub=='mv'&&!MV[V.i].a)MV.splice(V.i,1);if(V.sub=='bg'&&!BD[V.i].lim)BD.splice(V.i,1);if(V.sub=='sg'&&!SG[V.i].n.trim()&&!SG[V.i].goal)SG.splice(V.i,1);if(V.sub=='hd'&&!H[V.i].n.trim())H.splice(V.i,1);if(V.sub=='dd'&&!DI[V.i].parts.some(p=>typeof p!='string'||p.trim()))DI.splice(V.i,1);if(V.sub=='ed'&&!E[V.i].t.trim())E.splice(V.i,1);if(V.sub=='nd'){const n=N[V.i];if(!n.t.trim()&&!n.b.trim()&&!n.items.length)N.splice(V.i,1)}V.sub=null;if(V.back)V=V.back;else if(V.from)V={k:V.from,sub:null,i:0};redraw();return true}return false}
  const tb=q('[data-tab]');if(tb){tab=+tb.dataset.tab;redraw();return true}
  const vb=q('[data-vw]');if(vb){vw=+vb.dataset.vw;redraw();return true}
  const sk=q('.sub .ck');if(sk){const s=T[V.i].subs[+sk.closest('.sub').dataset.s];s.d=s.d?0:1;redraw();return true}
@@ -479,7 +491,7 @@ function act(e){const q=s=>e.target.closest(s);
  if(q('.pl2')){if(V.k=='tasks'){T.unshift(mkT('',{due:null,plan:dOf(0)}));V={k:'tasks',sub:'td',i:0};redraw();mod.scrollTop=0;setTimeout(()=>$('#f-t')?.focus(),50)}else if(V.k=='habits'){H.push(mkH(''));V={k:'habits',sub:'hd',i:H.length-1};redraw();mod.scrollTop=0;setTimeout(()=>$('#f-hn')?.focus(),50)}return true}
  return false}
 /* C15.8 + C08 · oninput con f-p, sin f-nl */
-mod.oninput=e=>{const i=e.target.id,v=e.target.value;if(i=='f-q'){nq=v;$('#nl').innerHTML=nList();return}if(mInput(i,v)||gInput(i,v)||pInput(i,v))return;if(i=='f-cd'){const n=Math.max(1,Math.min(600,Math.round(+v)||1));F.cd=n;$$('[data-fcd]').forEach(b=>b.classList.toggle('on',+b.dataset.fcd==n));if(F.mode=='idle'&&F.kind==1){F.total=F.left=n*60;fUpd()}return}if(i=='f-dq'){dq=v;$('#dlist').innerHTML=dList();return}if(i=='f-dt'){dInput();return}if(i=='f-dd'&&v&&V.sub=='dd'){const x=DI[V.i],t=new Date(x.d),p=v.split('-');t.setFullYear(+p[0],+p[1]-1,+p[2]);x.d=t;return}if(V.sub=='td'){const t=T[V.i];if(i=='f-t')t.t=v;else if(i=='f-n')t.nt=v;else if(i=='f-h')t.time=v;else if(i=='f-d')t.due=v?new Date(v+'T00:00'):null;else if(i=='f-p')t.plan=v?new Date(v+'T00:00'):null}else if(V.sub=='hd'){const h=H[V.i];if(i=='f-hn')h.n=v;else if(i=='f-h')h.tm=v}else if(V.sub=='ed'){const x=E[V.i];if(i=='f-et')x.t=v;else if(i=='f-ea')x.time=v;else if(i=='f-eb')x.end=v;else if(i=='f-el')x.loc=v;else if(i=='f-en')x.nt=v;else if(i=='f-e0'&&v){x.d0=new Date(v+'T00:00');if(x.d1<x.d0)x.d1=x.d0}else if(i=='f-e1'&&v){x.d1=new Date(v+'T00:00');if(x.d1<x.d0)x.d1=x.d0}}else if(V.sub=='nd'){const x=N[V.i];if(i=='f-nt')x.t=v;else if(i=='f-nb')x.b=v;x.u=Date.now()}};
+mod.oninput=e=>{const i=e.target.id,v=e.target.value;if(i=='f-q'){nq=v;$('#nl').innerHTML=nList();return}if(mInput(i,v)||gInput(i,v)||pInput(i,v)||rInput(i,v))return;if(i=='f-cd'){const n=Math.max(1,Math.min(600,Math.round(+v)||1));F.cd=n;$$('[data-fcd]').forEach(b=>b.classList.toggle('on',+b.dataset.fcd==n));if(F.mode=='idle'&&F.kind==1){F.total=F.left=n*60;fUpd()}return}if(i=='f-dq'){dq=v;$('#dlist').innerHTML=dList();return}if(i=='f-dt'){dInput();return}if(i=='f-dd'&&v&&V.sub=='dd'){const x=DI[V.i],t=new Date(x.d),p=v.split('-');t.setFullYear(+p[0],+p[1]-1,+p[2]);x.d=t;return}if(V.sub=='td'){const t=T[V.i];if(i=='f-t')t.t=v;else if(i=='f-n')t.nt=v;else if(i=='f-h')t.time=v;else if(i=='f-d')t.due=v?new Date(v+'T00:00'):null;else if(i=='f-p')t.plan=v?new Date(v+'T00:00'):null}else if(V.sub=='hd'){const h=H[V.i];if(i=='f-hn')h.n=v;else if(i=='f-h')h.tm=v}else if(V.sub=='ed'){const x=E[V.i];if(i=='f-et')x.t=v;else if(i=='f-ea')x.time=v;else if(i=='f-eb')x.end=v;else if(i=='f-el')x.loc=v;else if(i=='f-en')x.nt=v;else if(i=='f-e0'&&v){x.d0=new Date(v+'T00:00');if(x.d1<x.d0)x.d1=x.d0}else if(i=='f-e1'&&v){x.d1=new Date(v+'T00:00');if(x.d1<x.d0)x.d1=x.d0}}else if(V.sub=='nd'){const x=N[V.i];if(i=='f-nt')x.t=v;else if(i=='f-nb')x.b=v;x.u=Date.now()}};
 /* C06.5 + C11.4 · onchange con new y f-wgoal */
 mod.onchange=e=>{
  if(e.target.dataset.f=='goal'&&e.target.value=='new'){
@@ -586,8 +598,8 @@ function act2(e){const q=s=>e.target.closest(s);
  if(act3(e))return true;
  const thb=q('[data-th]');if(thb){setDk(thb.dataset.th=='1');redraw();return true}
  const sv2=q('[data-sv]');if(sv2){sv=+sv2.dataset.sv;redraw();return true}
- const svb=q('[data-save]');if(svb){if(['mv','bg','sg'].includes(V.sub))moneySave();else if(V.sub=='gl')glSave();else if(V.sub=='pd')pSave();else doSave();return true}
- if(mAct(q)||gAct(q)||pAct(q))return true;
+ const svb=q('[data-save]');if(svb){if(['mv','bg','sg'].includes(V.sub))moneySave();else if(V.sub=='gl')glSave();else if(V.sub=='pd')pSave();else if(V.sub=='rd')rSave();else doSave();return true}
+ if(mAct(q)||gAct(q)||pAct(q)||rAct(q))return true;
  const fmo=q('[data-fm]');if(fmo){if(F.mode=='idle'){F.kind=+fmo.dataset.fm;setPh('work');redraw()}return true}
  const fcd=q('[data-fcd]');if(fcd){if(F.mode=='idle'){F.cd=+fcd.dataset.fcd;setPh('work');redraw()}return true}
  const fgo=q('[data-fgo]');if(fgo){fGo();return true}
@@ -666,7 +678,7 @@ R.set=()=>{const c=ALL().map(a=>a.length),F=window.AureaFeatures&&AureaFeatures.
  +(F?F.nt()+F.bk():'')
  +`<div class="fl">Copia en JSON</div><p class="sm" style="margin:0 0 14px">Formato anterior, sin cifrar. Sirve para importar copias hechas con versiones antiguas de Áurea.</p><div class="l2b"><button class="pill gh" data-ex="1">Exportar JSON</button><button class="pill gh" data-im="1">Importar JSON</button></div><input type="file" id="f-imp" accept=".json,application/json" hidden>`
  +`<div class="fl">Almacenamiento y privacidad</div><p class="sm" style="margin:0">Todo se guarda en este dispositivo y funciona sin conexión. El bloqueo protege el acceso a la app, pero los datos no se cifran dentro del teléfono: activa «Cifrar copias» si las guardas fuera.</p><p class="sm" style="margin:8px 0 0">${STO.ok?'Almacenamiento local activo':'Sin almacenamiento persistente'+(STO.err?' ('+esc(STO.err)+')':'')}</p><p class="sm" id="stq" style="margin:2px 0 0"></p><p class="sm" style="margin:2px 0 0">${c[0]} tareas · ${c[1]} hábitos · ${c[2]} eventos · ${c[3]} notas · ${c[4]} entradas de diario · ${c[5]} movimientos · ${c[8]} sesiones de enfoque · ${c[9]} objetivos</p>`
- +`<div class="fl">Datos</div><button class="lk" data-snap="1" style="padding:6px 0;display:block;text-align:left">Restaurar estado anterior a la última importación o borrado</button><button class="lk" data-wipe="1" style="padding:12px 0;display:block;text-align:left;color:#d0645b">Borrar todos los datos</button>`
+ +`<div class="fl">Datos</div><button class="lk" data-snap="1" style="padding:6px 0;display:block;text-align:left">Deshacer la última importación, restauración o borrado (punto interno)</button><button class="lk" data-wipe="1" style="padding:12px 0;display:block;text-align:left;color:#d0645b">Borrar todos los datos</button>`
  +`<div class="fl">Acerca de</div><p class="sm" style="margin:0">Áurea · versión 5</p><div class="sbot" aria-hidden="true"></div>`};
 T.filter(t=>t.done&&!t.doneAt).forEach(t=>t.doneAt=Date.now()-3*864e5);
 let sv=0,sp=0,rv=0;const hidS=new Set(),SEC=['Actividad','Hábitos','Tiempo','Objetivos','Proyectos','Equilibrio','Revisión'];
@@ -711,7 +723,7 @@ mod.addEventListener('change',e=>{if(e.target.id=='f-fs'){F.task=+e.target.value
 $('#fp').onclick=()=>openMod('focus');
 /* C06.3 · FAB JS */
 /* FAB flotante eliminado: se conserva el control + central. */
-const saveBar=()=>['td','hd','ed','nd','dd','mv','bg','sg','gl','pd'].includes(V.sub)?'<div class="svb"><button class="pill" data-save="1">Guardar</button></div>':'';
+const saveBar=()=>['td','hd','ed','nd','dd','mv','bg','sg','gl','pd','rd'].includes(V.sub)?'<div class="svb"><button class="pill" data-save="1">Guardar</button></div>':'';
 const doSave=()=>{const s=V.sub;let msg='Guardado';if(s=='td'){if(!T[V.i].t.trim()){toast('Escribe un título para la tarea');return}msg='Tarea guardada'}else if(s=='hd'){if(!H[V.i].n.trim()){toast('Ponle un nombre al hábito');return}msg='Hábito guardado'}else if(s=='ed'){if(!E[V.i].t.trim()){toast('Escribe un título para el evento');return}msg='Evento guardado'}else if(s=='nd'){const n=N[V.i];if(!n.t.trim()&&!n.b.trim()&&!n.items.length){toast('La nota está vacía');return}msg='Nota guardada'}else if(s=='dd'){if(!DI[V.i].parts.some(p=>typeof p!='string'||p.trim())){toast('La entrada está vacía');return}msg='Entrada guardada';closePk()}V.sub=null;if(V.from)V={k:V.from,sub:null,i:0};redraw();mod.scrollTop=0;toast(msg)};
 let mt=0,mp=1,mo=0,mf='',CUR='EUR';
 const CURS=[['EUR','Euro (€)'],['USD','Dólar estadounidense ($)'],['MXN','Peso mexicano ($)'],['COP','Peso colombiano ($)'],['ARS','Peso argentino ($)'],['CLP','Peso chileno ($)'],['PEN','Sol peruano (S/)'],['GBP','Libra esterlina (£)'],['BRL','Real brasileño (R$)']],MT=['Resumen','Movimientos','Presupuestos','Ahorros','Ajustes'],MPAL=['#7aa7a1','#6f8fb5','#b59a5e','#7fa86f','#b5787f','#a08c6b','#6aa58f','#9b86b5'];
@@ -900,6 +912,168 @@ mod.addEventListener('change',async e=>{const id=e.target.id;if(V.k!='projects')
 mod.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.id=='f-pt'&&V.sub=='pd'){e.preventDefault();pAdd()}});
 mod.addEventListener('toggle',e=>{if(e.target.dataset&&e.target.dataset.pjadv)pjAdv=e.target.open},true);
 const projSel=o=>`<div class="fl">Proyecto</div><select data-f="proj"><option value="0">Sin proyecto</option>${PJ.filter(p=>p.st<4||p.id==o.proj).map(p=>`<option value="${p.id}"${p.id==o.proj?' selected':''}>${esc(p.n||'Sin nombre')}</option>`).join('')}</select>`;
+/* === Rutinas (fase 2) === */
+const RDS=['D','L','M','X','J','V','S'],RDN=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],RDORD=[1,2,3,4,5,6,0],RKN={t:'Tarea',h:'Hábito',e:'Evento'};
+const RT=[],RR=[];
+let rtTab=0;
+const mkR=(n,o={})=>{const days=(o.days||[1,2,3,4,5,6,0]).slice();return{id:++uid,n,d:'',on:1,days,tm:'',rem:0,sn:0,au:0,st:[],made:Date.now(),dh:[{f:iso(D0),days:days.slice()}],...o}};
+const mkS=(n,o={})=>({id:++uid,n,k:'',lid:0,min:0,...o});
+const rGet=s=>s.k=='t'?T.find(x=>x.id==s.lid):s.k=='h'?H.find(x=>x.id==s.lid):s.k=='e'?E.find(x=>x.id==s.lid):null;
+const rLbl=s=>{if(!s.k)return '';const x=rGet(s);return x?RKN[s.k]+': '+(x.t||x.n||''):RKN[s.k]+' eliminado'};
+const rHM=ts=>{const d=new Date(ts);return p2(d.getHours())+':'+p2(d.getMinutes())};
+const rDL=k=>{const d=new Date(k+'T00:00'),n=diff(d);return n==0?'Hoy':n==-1?'Ayer':pdt(d)};
+/* Calendario: el horario vigente en cada fecha sale del historial `dh`, así cambiar los días no reescribe el pasado */
+const rDays=(r,key)=>{let a=null;(r.dh||[]).forEach(x=>{if(x.f<=key)a=x.days});return a};
+const rSched=(r,d)=>{const a=rDays(r,iso(d));return !!a&&a.includes(d.getDay())};
+const rToday=r=>!!r.on&&rSched(r,D0);
+const rSetDays=r=>{const k=iso(D0),l=r.dh[r.dh.length-1];if(l&&l.f==k)l.days=r.days.slice();else r.dh.push({f:k,days:r.days.slice()})};
+const rSum=r=>{const d=RDORD.filter(i=>r.days.includes(i));return d.length==7?'Todos los días':d.length==5&&!r.days.includes(0)&&!r.days.includes(6)?'Lun–Vie':d.map(i=>RDS[i]).join(' ')};
+const rMin=r=>r.st.reduce((s,x)=>s+(x.min|0),0);
+/* Avisos: inicio + (opcional) cada paso a su hora acumulada; sin repetir horas */
+const rPlan=r=>{const o=[{j:0,n:r.st[0]?r.st[0].n:r.n,off:0}];if(r.sn){let a=0;r.st.forEach((s,j)=>{if(j>0){a+=r.st[j-1].min|0;if(a>o[o.length-1].off&&a<1440)o.push({j,n:s.n,off:a})}})}return o};
+/* Ejecuciones (una por rutina y día; guardan copia de los pasos: editar la rutina no cambia el historial) */
+const rRunOf=(r,key=iso(D0))=>RR.find(u=>u.rid==r.id&&u.day==key);
+const rCnt=u=>({n:u.ss.length,d:u.ss.filter(s=>s.s==1).length,k:u.ss.filter(s=>s.s==2).length});
+const rDoneLink=s=>{const x=rGet(s);if(!x)return false;if(s.k=='t')return !!x.done&&(x.doneAt||0)>=+D0;if(s.k=='h')return x.d[34]==1;return false};
+const rSync=u=>{if(!u||u.s!=0||u.day!=iso(D0))return 0;let c=0;u.ss.forEach(s=>{if(s.s==0&&s.k&&!s.un&&rDoneLink(s)){s.s=1;s.at=Date.now();s.au=1;c++}});return c};
+const rEnd=(u,s)=>{u.s=s;u.t1=Date.now();if(s==1){const r=RT.find(x=>x.id==u.rid);if(r&&r.au)try{window.AureaAuto&&AureaAuto.emit&&AureaAuto.emit('FIN',r)}catch(_){}}};
+const rChk=u=>{if(u.s==0&&u.ss.length&&u.ss.every(s=>s.s!=0)){rEnd(u,1);return 1}return 0};
+const rOpen=u=>{if(u.s!=0&&u.day==iso(D0)){u.s=0;u.t1=0}};
+const rStart=r=>{let u=rRunOf(r);if(u)return u;u={id:++uid,rid:r.id,rn:r.n,day:iso(D0),t0:Date.now(),t1:0,s:0,sch:rSched(r,D0)?1:0,ss:r.st.map(s=>({sid:s.id,n:s.n,k:s.k,lid:s.lid,min:s.min|0,s:0,at:0,mk:0}))};RR.push(u);rSync(u);rChk(u);return u};
+const rSweep=()=>{const k=iso(D0);let c=0;RR.forEach(u=>{if(u.s==0&&u.day<k){u.s=2;u.t1=u.t1||u.t0;c++}});return c};
+const rTog=(u,k)=>{const s=u.ss[k];if(!s||u.day!=iso(D0))return 0;
+ if(s.s==1){const x=rGet(s);if(s.mk&&x){if(s.k=='t'&&!x.rep)doneT(x,0);else if(s.k=='h')x.d[34]=0}s.s=0;s.at=0;s.mk=0;s.au=0;s.un=1;rOpen(u);return 1}
+ const x=rGet(s);
+ if(s.k=='t'&&x&&!x.done){if(!doneT(x,1))return 0;s.mk=1}
+ else if(s.k=='h'&&x&&x.d[34]!=1){x.d[34]=1;s.mk=1}
+ s.s=1;s.at=Date.now();s.un=0;rChk(u);return 1};
+const rSkp=(u,k)=>{const s=u.ss[k];if(!s||u.day!=iso(D0)||s.s==1)return;if(s.s==2){s.s=0;rOpen(u)}else{s.s=2;rChk(u)}};
+const rStat=r=>{let st=0;const m=+sod(r.made);for(let i=0;i<400;i++){const d=dOf(-i);if(+d<m)break;if(!rSched(r,d))continue;const u=rRunOf(r,iso(d));if(u&&u.s==1)st++;else if(i==0)continue;else break}
+ let sc=0,ok=0;for(let i=0;i<30;i++){const d=dOf(-i);if(+d<m)break;if(!rSched(r,d))continue;const u=rRunOf(r,iso(d));if(i==0&&!u)continue;sc++;if(u&&u.s==1)ok++}
+ return{st,sc,ok,p:sc?Math.round(100*ok/sc):0}};
+const rNorm=()=>{RT.forEach(r=>{if(!Array.isArray(r.st))r.st=[];if(!Array.isArray(r.days)||!r.days.length)r.days=[1,2,3,4,5,6,0];if(!Array.isArray(r.dh)||!r.dh.length)r.dh=[{f:iso(new Date(r.made||Date.now())),days:r.days.slice()}]});RR.forEach(u=>{if(!Array.isArray(u.ss))u.ss=[]});rSweep()};
+const rState=r=>{const u=rRunOf(r);if(!u)return'Pendiente';if(u.s==1)return'Completada';if(u.s==2)return'Incompleta';const c=rCnt(u);return'En curso · '+c.d+'/'+c.n};
+/* Vistas */
+const rRowH=(r,i)=>{const u=rRunOf(r),c=u?rCnt(u):null,pc=c&&c.n?Math.round(100*c.d/c.n):0;return `<div class="row rgr" data-rgo="${r.id}" style="--i:${i}"><div class="g"><div class="t">${esc(r.n||'Sin nombre')}</div>${u?`<div class="bar"><i style="width:${pc}%"></i></div>`:''}<div class="sm">${[r.tm,r.st.length+(r.st.length==1?' paso':' pasos'),rMin(r)?fmtM(rMin(r)):'',rState(r)].filter(Boolean).join(' · ')}</div></div><span class="sm">${u&&u.s==0?'Continuar':u?'Ver':'Empezar'}</span></div>`};
+const rRowL=(r,i)=>`<div class="row rtr" data-rt="${RT.indexOf(r)}" style="--i:${i}"><div class="g"><div class="t">${esc(r.n||'Sin nombre')}</div><div class="sm">${[r.on?'':'Pausada',rSum(r),r.tm,r.st.length+(r.st.length==1?' paso':' pasos')].filter(Boolean).join(' · ')}</div></div>${r.st.length?`<button class="pill sm2" data-rgo="${r.id}">Empezar</button>`:''}</div>`;
+const rHoy=()=>{const act=RT.filter(r=>r.on),td=act.filter(rToday).sort((a,b)=>(a.tm||'99').localeCompare(b.tm||'99')),ot=act.filter(r=>!rToday(r)&&r.st.length);
+ if(!RT.length)return `<div class="em" style="padding:34px 10px"><div class="eo">${ic('routines',1.3)}</div><h3>Aún no hay rutinas</h3><p>Toca + para crear tu primera rutina: ponle pasos, días y hora, y vincula tareas, hábitos o eventos que ya tienes.</p></div>`;
+ return (td.length?td.map(rRowH).join(''):`<p class="sm" style="margin:14px 0">No tienes rutinas programadas para hoy.</p>`)+(ot.length?`<div class="fl">Otras rutinas activas</div>`+ot.map((r,i)=>rRowL(r,i)).join(''):'')};
+const rLista=()=>RT.length?RT.map(rRowL).join(''):`<div class="em" style="padding:34px 10px"><div class="eo">${ic('routines',1.3)}</div><h3>Aún no hay rutinas</h3><p>Toca + para crear tu primera rutina.</p></div>`;
+const rHist=()=>{if(!RR.length)return emptyS('Aún no hay historial','Cuando completes o empieces una rutina, aquí verás cada ejecución, tu racha y tu cumplimiento.');
+ const l=RR.slice().sort((a,b)=>b.t0-a.t0),r30=RR.filter(u=>diff(new Date(u.day+'T00:00'))>-30),ok=r30.filter(u=>u.s==1).length,pasos=r30.reduce((s,u)=>s+rCnt(u).d,0),best=RT.filter(r=>r.on).reduce((m,r)=>Math.max(m,rStat(r).st),0);
+ return `<div class="two pjk" style="margin:6px 0 10px"><div class="mk"><small>Completadas · 30 d</small><b class="pos">${ok}</b></div><div class="mk"><small>Pasos hechos</small><b>${pasos}</b></div><div class="mk"><small>Mejor racha</small><b>${best}</b></div></div>`
+ +(RT.length?`<div class="fl">Por rutina</div>`+RT.map(r=>{const s=rStat(r);return `<div class="kv"><span>${esc(r.n||'Sin nombre')}</span><span class="sm">${s.st?'Racha '+s.st+' · ':''}${s.sc?s.p+'% en 30 d':'Sin datos'}</span></div>`}).join(''):'')
+ +`<div class="fl">Ejecuciones</div>`+l.slice(0,80).map((u,i)=>{const c=rCnt(u);return `<div class="row rhr" data-ru="${RR.indexOf(u)}" style="--i:${i}"><div class="g"><div class="t">${esc(u.rn)}</div><div class="sm">${rDL(u.day)} · ${c.d}/${c.n} pasos · ${u.s==1?'Completada':u.s==2?'Incompleta':'En curso'}</div></div></div>`}).join('')};
+const rMain=()=>{const td=RT.filter(rToday),dn=td.filter(r=>{const u=rRunOf(r);return u&&u.s==1}).length;
+ return hd('Rutinas y modos',`<b>${dn}</b> de ${td.length} hoy`)+`<div class="tabs">${['Hoy','Rutinas','Historial'].map((x,i)=>`<button data-rtt="${i}"${i==rtTab?' class="on"':''}>${x}</button>`).join('')}</div>`+(rtTab==0?rHoy():rtTab==1?rLista():rHist())+`<button class="pill gh" data-rguide="1" style="width:100%;margin-top:18px">Samsung, avisos y automatizaciones</button>`};
+/* Ejecución */
+const rRun=()=>{const u=RR[V.i];if(!u)return hd('Rutina','No encontrada',0);
+ const live=u.day==iso(D0);if(live){rSync(u);rChk(u)}
+ const c=rCnt(u),pc=c.n?Math.round(100*c.d/c.n):0,stt=u.s==1?'Completada':u.s==2?'Terminada sin completar':live?'En curso':'Sin terminar';
+ return hd(esc(u.rn),rDL(u.day)+' · '+stt,0)
+ +`<div class="big2" style="font-size:44px">${pc}%</div><div class="bar"><i style="width:${pc}%"></i></div><p class="sm">${c.d} de ${c.n} pasos${c.k?' · '+c.k+' omitidos':''}${u.s&&u.t1?' · cerrada '+rHM(u.t1):''}</p>`
+ +(u.ss.length?u.ss.map((s,k)=>`<div class="row rst${s.s==1?' done':''}${s.s==2?' skp':''}" style="--i:${k}"><span class="ck"${live?` data-rtg="${k}"`:''}>${ic('tasks',2.6)}</span><div class="g"><div class="t">${esc(s.n||'Paso')}</div><div class="sm">${[rLbl(s),s.min?s.min+' min':'',s.s==2?'Omitido':s.au?'Hecho en su módulo':s.s==1&&s.at?'Hecho '+rHM(s.at):''].filter(Boolean).join(' · ')}</div></div>${live&&s.s!=1?`<button class="sx" data-rsk="${k}">${s.s==2?'Reponer':'Omitir'}</button>`:''}${s.k&&rGet(s)?`<button class="sx" data-rop="${k}">Abrir</button>`:''}</div>`).join(''):'<p class="sm" style="margin-top:14px">Esta ejecución no tiene pasos.</p>')
+ +(live?(u.s==0?`<button class="pill" data-rfin="1" style="width:100%;margin-top:14px">Finalizar rutina</button>`:`<button class="pill gh" data-rre="1" style="width:100%;margin-top:14px">Reabrir</button>`):'')
+ +`<button class="pill gh" data-rdel="1" style="width:100%;margin-top:10px">Eliminar este registro</button>`};
+/* Editor */
+const rOpts=(r,s,k)=>{const used=new Set(r.st.filter((x,j)=>j!=k&&x.k==s.k&&x.lid).map(x=>x.lid)),keep=x=>x.id==s.lid;let a=[],f;
+ if(s.k=='t'){a=T.filter(t=>keep(t)||(!t.done&&!used.has(t.id)));f=t=>t.t||'Sin título'}
+ else if(s.k=='h'){a=H.filter(h=>keep(h)||(!h.ar&&!used.has(h.id)));f=h=>h.n||'Sin nombre'}
+ else{a=E.filter(e=>keep(e)||(!used.has(e.id)&&(e.rep||diff(e.d1)>=-1)));f=e=>(e.t||'Sin título')+' · '+pdt(e.d0)}
+ return `<select id="f-rl-${k}"><option value="0">Elegir ${RKN[s.k].toLowerCase()}…</option>${a.map(x=>`<option value="${x.id}"${keep(x)?' selected':''}>${esc(f(x))}</option>`).join('')}${s.k!='e'?`<option value="new">+ Crear ${s.k=='t'?'tarea':'hábito'} nuevo con el nombre del paso</option>`:''}</select>`};
+const rStep=(r,s,k)=>`<div class="rsp"><div class="rsh"><b>${k+1}</b><input id="f-rs-${k}" value="${esc(s.n)}" placeholder="Paso ${k+1}" autocomplete="off"><span class="pmv"><button class="sx" data-rup="${k}"${k?'':' disabled'} aria-label="Subir">▲</button><button class="sx" data-rdn="${k}"${k<r.st.length-1?'':' disabled'} aria-label="Bajar">▼</button></span><button class="sx" data-rxs="${k}" aria-label="Quitar paso">×</button></div><div class="two"><select id="f-rk-${k}" aria-label="Vínculo">${[['','Paso libre'],['t','Vincular tarea'],['h','Vincular hábito'],['e','Vincular evento']].map(x=>`<option value="${x[0]}"${s.k==x[0]?' selected':''}>${x[1]}</option>`).join('')}</select><input type="number" inputmode="numeric" id="f-rm-${k}" min="0" max="600" placeholder="Minutos" value="${s.min||''}"></div>${s.k?rOpts(r,s,k):''}</div>`;
+const rDet=()=>{const r=RT[V.i],n=r.st.length,hasRun=!!rRunOf(r);
+ return `<div class="hd"><button class="ib bk" aria-label="Volver">${ic('back')}</button><span class="tb"><button class="ib rdl" aria-label="Eliminar">${ic('trash')}</button></span></div>`
+ +`<input class="ti" id="f-rn" value="${esc(r.n)}" placeholder="Nombre de la rutina" style="margin-top:18px">`
+ +`<p class="sm">${n?n+(n==1?' paso':' pasos')+(rMin(r)?' · '+fmtM(rMin(r)):''):'Añade los pasos de tu rutina'}</p>`
+ +(n?`<button class="pill" data-rgo="${r.id}" style="width:100%;margin-top:6px">${hasRun?'Abrir ejecución de hoy':'Empezar ahora'}</button>`:'')
+ +`<div class="fl">Estado</div>${seg('on',[1,0],['Activa','Pausada'],r.on)}`
+ +`<div class="fl">Descripción</div><textarea id="f-rd" rows="2" placeholder="¿Para qué sirve esta rutina?">${esc(r.d)}</textarea>`
+ +`<div class="fl">Pasos</div><div id="rsl">${r.st.map((s,k)=>rStep(r,s,k)).join('')}</div>`
+ +`<div style="display:flex;gap:8px;margin-top:8px"><input id="f-rsn" style="flex:1;min-width:0" placeholder="Nuevo paso" autocomplete="off" enterkeyhint="done"><button class="pill sm2" data-rsa="1">Añadir</button></div>`
+ +`<div class="fl">Días</div><div class="rdays">${RDORD.map(i=>`<button data-rday="${i}" aria-label="${RDN[i]}"${r.days.includes(i)?' class="on"':''}>${RDS[i]}</button>`).join('')}</div>`
+ +`<div class="fl">Hora de inicio <small>· opcional</small></div><input type="time" id="f-rt" value="${esc(r.tm)}">`
+ +`<div class="fl">Avisos</div>${seg('rem',[0,1],['Sin aviso','Avisar al empezar'],r.rem)}`
+ +(r.rem&&n>1?`<div style="height:8px"></div>${seg('sn',[0,1],['Solo al empezar','También cada paso'],r.sn)}<p class="sm" style="margin-top:8px">Los avisos de cada paso usan los minutos de los pasos anteriores.</p>`:'')
+ +(r.rem&&!r.tm?`<p class="sm" style="margin-top:8px">Elige una hora de inicio para recibir el aviso.</p>`:'')
+ +`<div class="fl">Notificación para Samsung y automatizaciones</div>${seg('au',[0,1],['No','Sí'],r.au)}<p class="sm" style="margin-top:8px">${r.au?'Áurea publicará una notificación silenciosa con la palabra clave '+esc(rKey(r,'INICIO'))+' a la hora de inicio, y otra con '+esc(rKey(r,'FIN'))+' al completar la rutina. Samsung puede leerla (ver la guía).':'Publica una notificación silenciosa con palabra clave para que Modos y rutinas de Samsung la lea y active una rutina suya.'}</p>${r.au&&!r.tm?'<p class="sm" style="margin-top:8px">Elige una hora de inicio para recibir la de inicio.</p>':''}`
+ +`<p class="sm" style="margin-top:14px">Los cambios de días no modifican tu historial pasado.</p>`};
+/* Guía Samsung y automatizaciones */
+const rGuide=()=>{queueMicrotask(rGuideFill);
+ const lk=RT.filter(r=>r.st.length).map(r=>`<div class="kv" style="align-items:center;gap:8px"><span class="g">${esc(r.n||'Sin nombre')}${r.au?'':' <small class="sm">· notificación desactivada</small>'}</span><button class="pill sm2" data-rck="${r.id}">Palabra clave</button><button class="pill sm2" data-rcp="${r.id}">Enlace</button></div>`).join('');
+ return hd('Samsung y automatizaciones','Qué puede y qué no puede hacer Áurea',0)
+ +`<div class="fl">Lo que Áurea hace de verdad</div><p class="sm">Áurea programa sus propios avisos en Android (rutinas, pasos, hábitos y eventos) y se abre desde ellos. Funciona sin conexión.</p>`
+ +`<div class="fl">Lo que Áurea no puede hacer</div><p class="sm">Modos y rutinas es una función de Samsung. Samsung no ofrece una API pública para que otra app cree, lea, active o desactive tus modos y rutinas, ni para saber en qué modo estás. Por eso Áurea no los controla ni los imita: se configuran a mano, como se explica abajo.</p>`
+ +`<div class="fl">Estado en este dispositivo</div><div id="rgst"><p class="sm">Comprobando…</p></div>`
+ +`<div class="fl">Configurarlo en tu Samsung</div><p class="sm">La conexión es por notificación: Áurea publica una notificación silenciosa con una palabra clave y una rutina de Samsung la lee.</p><ol class="sm" style="padding-left:18px;line-height:1.55;margin:0"><li>En la rutina de Áurea, activa «Notificación para Samsung y automatizaciones» y pon una hora de inicio.</li><li>Abajo, pulsa «Enviar notificación de prueba»: así Samsung ve a Áurea en su lista de apps.</li><li>Ajustes › Modos y rutinas › Rutinas › +.</li><li>En «Si», elige «Notificación recibida», selecciona la app Áurea y, como palabra clave, la de tu rutina (cópiala abajo).</li><li>En «Entonces», elige lo que debe hacer Samsung (activar un modo, ajustes del teléfono…).</li><li>Si Samsung pide acceso a las notificaciones, concédelo: es Samsung quien las lee, no Áurea.</li></ol><p class="sm" style="margin-top:8px">Los nombres de los menús cambian según el modelo y la versión de One UI. En algunas versiones esa condición da fallos (hay quejas en la comunidad de Samsung); si no se activa, prueba con la palabra clave más corta, «AUREA_INICIO».</p>`
+ +`<div class="fl">Palabras clave y enlaces</div><p class="sm">Los atajos del icono de Áurea (mantén pulsado el icono) y los enlaces <b>aurea://open/routines/ID/start</b> son mecanismos estándar de Android. Funcionan con apps de automatización que pueden lanzar enlaces (por ejemplo Tasker, MacroDroid o adb). Modos y rutinas de Samsung, por lo que sabemos, sólo permite abrir la app, no un enlace concreto.</p>${lk||'<p class="sm">Crea una rutina con pasos para obtener su enlace.</p>'}`
+ +`<div class="fl">Para que los avisos lleguen a su hora</div><p class="sm">Samsung suspende las apps en segundo plano. Ajustes › Batería › Límites de uso en segundo plano › Apps sin suspender: añade Áurea. Y en Ajustes › Apps › Áurea › Batería: «Sin restricciones».</p>`};
+const rGuideFill=async()=>{const el=$('#rgst');if(!el)return;const A=window.AureaAuto;
+ if(!A||!A.native){el.innerHTML='<p class="sm">Estás en la versión web: los avisos del sistema, los atajos y los ajustes de batería sólo existen en la app Android.</p>';return}
+ let s;try{s=await A.status()}catch(e){el.innerHTML='<p class="sm">No se pudo comprobar el estado.</p>';return}
+ if(!$('#rgst'))return;const row=(t,ok,btn,a)=>`<div class="kv" style="align-items:center"><div class="g"><div class="t">${t}</div><div class="sm">${ok}</div></div>${btn?`<button class="pill sm2" data-rga="${a}">${btn}</button>`:''}</div>`;
+ el.innerHTML=row('Avisos de Áurea',s.notif?'Permitidos':'Desactivados',s.notif?'':'Permitir','perm')
+ +(s.exact==null?'':row('Alarmas exactas',s.exact?'Permitidas':'No permitidas: los avisos pueden retrasarse',s.exact?'':'Permitir','exact'))
+ +(s.battery==null?'':row('Batería',s.battery?'Áurea está exenta de optimización':'Optimizada: el sistema puede retrasar avisos',s.battery?'':'Ajustar','battery'))
+ +row('Avisos de prueba','Envía un aviso en unos segundos','Probar','test')
+ +row('Notificación para Samsung','Envía ya una notificación de prueba con palabra clave','Enviar notificación de prueba','autotest')
+ +(s.samsung?row('Modos y rutinas de Samsung','Instalado en este dispositivo','Abrir','samsung'):(s.maker=='samsung'?'':''))
+ +row('Atajos del icono','Rutinas con pasos en el menú del icono','Actualizar','shortcuts')};
+/* Acciones */
+const rBack=()=>{V.sub=null;if(V.back)V=V.back};
+const rSave=()=>{const r=RT[V.i];if(!r.n.trim()){toast('Ponle un nombre a la rutina');return}
+ r.st=r.st.filter(s=>s.n.trim()||rGet(s));r.st.forEach(s=>{if(!s.n.trim()){const x=rGet(s);s.n=(x.t||x.n||'').trim()}});rBack();redraw();mod.scrollTop=0;toast('Rutina guardada')};
+const rNew=(r,k)=>{const s=r.st[k],nm=s.n.trim().toLowerCase();if(!nm){toast('Escribe primero el nombre del paso');return 0}
+ let x;if(s.k=='t'){x=T.find(t=>!t.done&&(t.t||'').trim().toLowerCase()==nm);if(!x){x=mkT(s.n.trim(),{due:null,plan:null});T.push(x);toast('Tarea creada y vinculada')}else toast('Vinculada la tarea que ya existía')}
+ else{x=HA().find(h=>(h.n||'').trim().toLowerCase()==nm);if(!x){x=mkH(s.n.trim());H.push(x);toast('Hábito creado y vinculado')}else toast('Vinculado el hábito que ya existía')}
+ s.lid=x.id;return 1};
+const rOpenLink=s=>{const x=rGet(s);if(!x)return;const b={k:V.k,sub:V.sub,i:V.i,back:V.back};
+ if(s.k=='t')V={k:'tasks',sub:'td',i:T.indexOf(x),back:b};else if(s.k=='h')V={k:'habits',sub:'hd',i:H.indexOf(x),back:b};else V={k:'cal',sub:'ed',i:E.indexOf(x),back:b};redraw();mod.scrollTop=0};
+const rGo=r=>{if(!r.st.length){toast('Añade al menos un paso');return}const b=V.sub=='rd'?{k:V.k,sub:V.sub,i:V.i,back:V.back}:null;const u=rStart(r);V={k:'routines',sub:'rx',i:RR.indexOf(u),back:b};redraw();mod.scrollTop=0;save()};
+const rLink=r=>'aurea://open/routines/'+r.id+'/start';
+const rKey=(r,k)=>'AUREA_'+k+' '+(r.n||r.rn||'').trim();
+const rAct=q=>{if(V.k!='routines')return 0;let x;
+ if(q('.pl2')&&!V.sub){const r=mkR('');RT.push(r);V={k:'routines',sub:'rd',i:RT.length-1};redraw();mod.scrollTop=0;setTimeout(()=>$('#f-rn')?.focus(),50);return 1}
+ if(x=q('[data-rtt]')){rtTab=+x.dataset.rtt;redraw();return 1}
+ if(q('[data-rguide]')){V={k:'routines',sub:'ra',i:0};redraw();mod.scrollTop=0;return 1}
+ if(x=q('[data-rck]')){const r=RT.find(y=>y.id==+x.dataset.rck);if(r){const u=rKey(r,'INICIO');try{navigator.clipboard.writeText(u).then(()=>toast('Palabra clave copiada'),()=>toast(u))}catch(_){toast(u)}}return 1}
+ if(x=q('[data-rcp]')){const r=RT.find(y=>y.id==+x.dataset.rcp);if(r){const u=rLink(r);try{navigator.clipboard.writeText(u).then(()=>toast('Enlace copiado'),()=>toast(u))}catch(_){toast(u)}}return 1}
+ if(x=q('[data-rga]')){const A=window.AureaAuto,a=x.dataset.rga;if(A&&A.act)A.act(a).then(m=>{if(m)toast(m);rGuideFill()},e=>toast(String(e&&e.message||'No se pudo')));return 1}
+ if(x=q('[data-rgo]')){const r=RT.find(y=>y.id==+x.dataset.rgo);if(r)rGo(r);return 1}
+ if(x=q('.rtr')){V={k:'routines',sub:'rd',i:+x.dataset.rt};redraw();mod.scrollTop=0;return 1}
+ if(x=q('.rhr')){V={k:'routines',sub:'rx',i:+x.dataset.ru,back:null};redraw();mod.scrollTop=0;return 1}
+ if(V.sub=='rx'){const u=RR[V.i];if(!u)return 0;
+  if(x=q('[data-rtg]')){const was=u.s;if(rTog(u,+x.dataset.rtg)){redraw();if(was==0&&u.s==1)toast('Rutina completada')}return 1}
+  if(x=q('[data-rsk]')){rSkp(u,+x.dataset.rsk);redraw();return 1}
+  if(x=q('[data-rop]')){rOpenLink(u.ss[+x.dataset.rop]);return 1}
+  if(q('[data-rfin]')){const p=u.ss.filter(s=>s.s==0).length;const go=()=>{rEnd(u,p?2:1);redraw()};if(p)ask('Finalizar rutina','Quedan '+p+(p==1?' paso pendiente':' pasos pendientes')+'. Se guardará como incompleta.','Finalizar',go);else go();return 1}
+  if(q('[data-rre]')){rOpen(u);redraw();return 1}
+  if(q('[data-rdel]')){const i=V.i;RR.splice(i,1);rBack();redraw();toast('Registro eliminado',()=>{RR.splice(i,0,u);redraw()});return 1}
+  return 0}
+ if(V.sub!='rd')return 0;const r=RT[V.i];
+ if(x=q('.seg button')){const f=x.parentNode.dataset.f;r[f]=+x.dataset.v;redraw();return 1}
+ if(x=q('[data-rday]')){const d=+x.dataset.rday,i=r.days.indexOf(d);if(i>=0){if(r.days.length<2){toast('Elige al menos un día');return 1}r.days.splice(i,1)}else r.days.push(d);rSetDays(r);redraw();return 1}
+ if(q('[data-rsa]')){const i=$('#f-rsn'),v=i&&i.value.trim();if(!v)return 1;r.st.push(mkS(v));redraw();setTimeout(()=>$('#f-rsn')?.focus(),30);return 1}
+ if(x=q('[data-rup]')){const k=+x.dataset.rup;if(k>0){[r.st[k-1],r.st[k]]=[r.st[k],r.st[k-1]];redraw()}return 1}
+ if(x=q('[data-rdn]')){const k=+x.dataset.rdn;if(k<r.st.length-1){[r.st[k+1],r.st[k]]=[r.st[k],r.st[k+1]];redraw()}return 1}
+ if(x=q('[data-rxs]')){const k=+x.dataset.rxs,s=r.st.splice(k,1)[0];redraw();toast('Paso quitado',()=>{r.st.splice(k,0,s);redraw()});return 1}
+ if(q('.rdl')){const i=V.i,r0=RT[i];RT.splice(i,1);rBack();redraw();toast('Rutina eliminada · el historial se conserva',()=>{RT.splice(i,0,r0);redraw()});return 1}
+ return 0};
+const rInput=(i,v)=>{if(V.k!='routines'||V.sub!='rd')return 0;const r=RT[V.i];let m;
+ if(i=='f-rn')r.n=v;else if(i=='f-rd')r.d=v;else if(i=='f-rt')r.tm=v;
+ else if(m=/^f-rs-(\d+)$/.exec(i)){if(r.st[+m[1]])r.st[+m[1]].n=v}
+ else if(m=/^f-rm-(\d+)$/.exec(i)){if(r.st[+m[1]])r.st[+m[1]].min=Math.max(0,Math.min(600,Math.round(+v)||0))}
+ else return 0;return 1};
+mod.addEventListener('change',e=>{const id=e.target.id;if(V.k!='routines'||V.sub!='rd')return;const r=RT[V.i];let m;
+ if(id=='f-rt'){redraw();return}
+ if(m=/^f-rk-(\d+)$/.exec(id)){const s=r.st[+m[1]];if(s){s.k=e.target.value;s.lid=0;redraw()}return}
+ if(m=/^f-rl-(\d+)$/.exec(id)){const k=+m[1],s=r.st[k];if(!s)return;const v=e.target.value;if(v=='new'){if(!rNew(r,k)){redraw();return}}else{s.lid=+v;const x=rGet(s);if(x&&!s.n.trim())s.n=x.t||x.n||''}redraw()}});
+mod.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.id=='f-rsn'&&V.k=='routines'&&V.sub=='rd'){e.preventDefault();const b=mod.querySelector('[data-rsa]');b&&b.click()}});
+window.AureaRoutines={list:()=>RT,link:rLink,
+ open(id){const i=RT.findIndex(x=>x.id==id);if(i<0)return false;openMod('routines');V={k:'routines',sub:'rd',i};redraw();return true},
+ start(id){const r=RT.find(x=>x.id==id);if(!r)return false;openMod('routines');if(!r.st.length){V={k:'routines',sub:'rd',i:RT.indexOf(r)};redraw();return true}const u=rStart(r);V={k:'routines',sub:'rx',i:RR.indexOf(u),back:null};redraw();save();return true}};
+R.routines=()=>V.sub=='rd'?rDet():V.sub=='rx'?rRun():V.sub=='ra'?rGuide():rMain();
 /* C15.10 · newItem con plan=hoy */
 function newItem(s){const k=MAIN[s];openMod(k);
  if(s==0){T.unshift(mkT('',{due:null,plan:dOf(0)}));V={k,sub:'td',i:0}}
@@ -907,20 +1081,20 @@ function newItem(s){const k=MAIN[s];openMod(k);
  else if(s==2){E.push(mkE('',{d0:new Date(D0),time:'09:00',end:'10:00'}));V={k,sub:'ed',i:E.length-1}}
  else{N.unshift(mkN('',''));V={k,sub:'nd',i:0}}
  redraw();mod.scrollTop=0;setTimeout(()=>{const f=$('#f-t,#f-hn,#f-et,#f-nt');if(f)f.focus()},450)}
-const APP_V=5,STO={ok:0,err:'',per:0},CORE=['tasks','habits','events','notes','diary'],STORES=[...CORE,'money','budgets','goals','focus','objectives','projects'];
+const APP_V=6,STO={ok:0,err:'',per:0},CORE=['tasks','habits','events','notes','diary'],STORES=[...CORE,'money','budgets','goals','focus','objectives','projects','routines','routruns'];
 let lastStr='';
 let ready=0,stale=0,svt=0,FIRED={},LASTB=0,db=null,askCb=null;
 const prom=r=>new Promise((ok,ko)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)});
 const txDone=t=>new Promise((ok,ko)=>{t.oncomplete=ok;t.onerror=()=>ko(t.error);t.onabort=()=>ko(t.error||new Error('Transacción cancelada'))});
-const COL=()=>({tasks:T,habits:H,events:E,notes:N,diary:DI,money:MV,budgets:BD,goals:SG,focus:SL,objectives:GL,projects:PJ}),ALL=()=>Object.values(COL());
-const MK={tasks:()=>mkT(''),habits:()=>mkH(''),events:()=>mkE(''),notes:()=>mkN('',''),diary:()=>({}),money:()=>mkM('',0,'',new Date(D0),''),budgets:()=>({}),goals:()=>({hist:[]}),focus:()=>({}),objectives:()=>({n:'',term:0,date:null,cat:0,nt:'',done:0}),projects:()=>mkP('')};
-const blank={tasks:x=>!(x.t||'').trim(),habits:x=>!(x.n||'').trim(),events:x=>!(x.t||'').trim(),notes:x=>!(x.t||'').trim()&&!(x.b||'').trim()&&!(x.items||[]).length,diary:x=>!(x.parts||[]).some(p=>typeof p!='string'||p.trim()),money:x=>!x.a,budgets:x=>!x.lim,goals:x=>!(x.n||'').trim()&&!x.goal,focus:()=>false,objectives:x=>!(x.n||'').trim(),projects:x=>!(x.n||'').trim()};
+const COL=()=>({tasks:T,habits:H,events:E,notes:N,diary:DI,money:MV,budgets:BD,goals:SG,focus:SL,objectives:GL,projects:PJ,routines:RT,routruns:RR}),ALL=()=>Object.values(COL());
+const MK={tasks:()=>mkT(''),habits:()=>mkH(''),events:()=>mkE(''),notes:()=>mkN('',''),diary:()=>({}),money:()=>mkM('',0,'',new Date(D0),''),budgets:()=>({}),goals:()=>({hist:[]}),focus:()=>({}),objectives:()=>({n:'',term:0,date:null,cat:0,nt:'',done:0}),projects:()=>mkP(''),routines:()=>mkR(''),routruns:()=>({ss:[]})};
+const blank={tasks:x=>!(x.t||'').trim(),habits:x=>!(x.n||'').trim(),events:x=>!(x.t||'').trim(),notes:x=>!(x.t||'').trim()&&!(x.b||'').trim()&&!(x.items||[]).length,diary:x=>!(x.parts||[]).some(p=>typeof p!='string'||p.trim()),money:x=>!x.a,budgets:x=>!x.lim,goals:x=>!(x.n||'').trim()&&!x.goal,focus:()=>false,objectives:x=>!(x.n||'').trim(),projects:x=>!(x.n||'').trim(),routines:x=>!(x.n||'').trim(),routruns:()=>false};
 const ROFF=[0,0,10,60,1440],HOFF=[0,0,10,60];
 const at=(d,s)=>{const x=new Date(d);x.setHours(+s.slice(0,2),+s.slice(3,5),0,0);return +x};
 const sz=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
 const banner=(m,fn)=>{const b=$('#bn');b.textContent=m;b.hidden=!m;b.onclick=fn||(()=>{b.hidden=true})};
 const fmtD=u=>{const d=new Date(u);return d.getDate()+' '+MES[d.getMonth()]+' '+d.getFullYear()+', '+p2(d.getHours())+':'+p2(d.getMinutes())};
-function openDB(){return new Promise((ok,ko)=>{let r;try{r=indexedDB.open('aurea',3)}catch(e){return ko(e)}
+function openDB(){return new Promise((ok,ko)=>{let r;try{r=indexedDB.open('aurea',4)}catch(e){return ko(e)}
  r.onupgradeneeded=()=>{const d=r.result,has=n=>d.objectStoreNames.contains(n);STORES.forEach(s=>{if(!has(s))d.createObjectStore(s,{keyPath:'id'})});if(!has('meta'))d.createObjectStore('meta');if(!has('files'))d.createObjectStore('files',{keyPath:'id'});if(!has('snap'))d.createObjectStore('snap')};
  r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);r.onblocked=()=>ko(new Error('Base de datos bloqueada'))})}
 function openLegacyDB(){return new Promise(resolve=>{let r,created=0;try{r=indexedDB.open('l2life')}catch(_){resolve(null);return}r.onupgradeneeded=()=>{created=1;try{r.transaction.abort()}catch(_){}};r.onsuccess=()=>{const d=r.result;if(created){d.close();resolve(null)}else resolve(d)};r.onerror=()=>resolve(null);r.onblocked=()=>resolve(null)})}
@@ -950,7 +1124,7 @@ const rebH=h=>{h.log=h.log||{};h.d=Array.from({length:35},(_,k)=>h.log[iso(dOf(k
 const hRec=(h,i)=>{const log={...(h.log||{})};h.d.forEach((v,k)=>{const key=iso(dOf(k-34));if(v)log[key]=v;else delete log[key]});h.log=log;const{d,...r}=h;return{...r,_o:i}};
 const recs=(k,a)=>a.filter(x=>!blank[k](x)).map((x,i)=>k=='habits'?hRec(x,i):{...x,_o:i});
 const fill=(arr,rows,mk)=>{rows.sort((a,b)=>(a._o||0)-(b._o||0));arr.splice(0,arr.length,...rows.map(r=>{const o={...mk(),...r};delete o._o;return o}))};
-const fixUid=()=>{uid=Math.max(uid,...ALL().flatMap(a=>a.map(x=>x.id|0)),...N.flatMap(n=>n.att.map(a=>a.id|0)),...PJ.flatMap(p=>p.att.map(a=>a.id|0)))};
+const fixUid=()=>{uid=Math.max(uid,...ALL().flatMap(a=>a.map(x=>x.id|0)),...N.flatMap(n=>n.att.map(a=>a.id|0)),...PJ.flatMap(p=>p.att.map(a=>a.id|0)),...RT.flatMap(r=>(r.st||[]).map(x=>x.id|0)))};
 /* C12 */
 const prefs=()=>({dk:PREF.dk,cur:CUR,mc:MC,waterGoal:PREF.waterGoal||2500,focusTimer:focusSnapshot()});
 function fail(e){STO.err=(e&&(e.name||e.message))||'error';banner('No se pudieron guardar los cambios ('+STO.err+'). Exporta una copia desde Ajustes. (Toca para ocultar)')}
@@ -975,7 +1149,7 @@ async function load(){const t=db.transaction([...STORES,'meta','files']),all=n=>
  if(PREF.dk!=null){dk=!!PREF.dk}
  if(PREF.cur)CUR=PREF.cur;if(Array.isArray(PREF.mc)&&PREF.mc.length)MC.splice(0,MC.length,...PREF.mc);
  N.forEach(n=>{n.att=(n.att||[]).filter(a=>a&&typeof a=='object')});PJ.forEach(p=>{p.att=(p.att||[]).filter(a=>a&&typeof a=='object');p.log=p.log||[]});
- fixUid();
+ rNorm();fixUid();
  const used=new Set([...N.flatMap(n=>n.att.map(a=>a.id)),...PJ.flatMap(p=>p.att.map(a=>a.id))]),orph=files.filter(f=>!used.has(f.id));
  if(orph.length){try{const x=db.transaction('files','readwrite');orph.forEach(f=>x.objectStore('files').delete(f.id))}catch(_){}}}
 const b64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=()=>ko(r.error);r.readAsDataURL(b)});
@@ -992,7 +1166,7 @@ async function exportData(){try{await persist();const c=COL(),data={};STORES.for
 async function snapshot(){if(!db)return;const c=COL(),data={};STORES.forEach(k=>data[k]=recs(k,c[k]));const files=await prom(fileStore('readonly').getAll());const t=db.transaction('snap','readwrite');t.objectStore('snap').put({at:Date.now(),data,files,prefs:prefs()},'last');await txDone(t)}
 async function applyData(data,files,pf){const c=COL();STORES.forEach(k=>fill(c[k],(data[k]||[]).map(r=>({...r})),MK[k]));H.forEach(rebH);
  if(pf){if(pf.cur)CUR=pf.cur;if(Array.isArray(pf.mc)&&pf.mc.length)MC.splice(0,MC.length,...pf.mc);if(pf.waterGoal)PREF.waterGoal=pf.waterGoal;if(pf.focusTimer){restoreFocusSnapshot(pf.focusTimer);resumeFocusTimer()}}
- N.forEach(n=>{n.att=(n.att||[]).filter(a=>a&&typeof a=='object')});PJ.forEach(p=>{p.att=(p.att||[]).filter(a=>a&&typeof a=='object');p.log=p.log||[]});fixUid();
+ N.forEach(n=>{n.att=(n.att||[]).filter(a=>a&&typeof a=='object')});PJ.forEach(p=>{p.att=(p.att||[]).filter(a=>a&&typeof a=='object');p.log=p.log||[]});rNorm();fixUid();
  if(db){const t=db.transaction('files','readwrite'),s=t.objectStore('files');s.clear();(files||[]).forEach(f=>s.put(f));await txDone(t)}
  ready=1;await persist();V={k:'set',sub:null,i:0};redraw();sync()}
 async function importData(file){let o;try{o=JSON.parse(await file.text(),jrev)}catch(e){return toast('Archivo no válido')}
@@ -1011,7 +1185,7 @@ function act3(e){const q=s=>e.target.closest(s);
  if(q('[data-ex]')){exportData();return true}
  if(q('[data-im]')){$('#f-imp').click();return true}
  if(q('[data-wipe]')){ask('Borrar todos los datos','Se eliminarán tareas, hábitos, eventos, notas y diario de este dispositivo. Se guarda un punto de restauración.','Borrar',wipe);return true}
- if(q('[data-snap]')){ask('Restaurar estado anterior','Se reemplazarán los datos actuales por el último punto de restauración.','Restaurar',restoreSnap);return true}
+ if(q('[data-snap]')){ask('Deshacer última importación o borrado','Se vuelve al punto interno que Áurea guardó justo antes de la última importación, restauración o borrado. No es una copia de seguridad: para recuperar un archivo usa «Copias de seguridad».','Deshacer',restoreSnap);return true}
  if(q('[data-ntf]')){try{Notification.requestPermission().then(()=>redraw())}catch(_){toast('No se pudieron activar los avisos')}return true}
  const ao=q('[data-ao]');if(ao){openFile(N[V.i].att[+ao.dataset.ao].id);return true}
  const ax=q('[data-ax]');if(ax){const a=N[V.i].att.splice(+ax.dataset.ax,1)[0];delFile(a.id);N[V.i].u=Date.now();redraw();return true}
@@ -1021,7 +1195,8 @@ function tick(){if(!ready)return;if(iso(new Date())!=iso(D0)){flush();location.r
  [0,1].forEach(n=>{const d=dOf(n);
   E.forEach(e=>{if(!e.rem||!occ(e,d))return;const st=at(d,e.all||!e.time?'09:00':e.time);chk('e'+e.id+iso(d),e.t+(e.time&&!e.all?' · '+e.time:''),st,ROFF[e.rem],e.end&&!e.all?at(d,e.end):st+36e5)});
   T.forEach(t=>{if(t.done||!t.rem)return;const st=at(d,t.time||'09:00');if(t.plan&&!same(t.plan,d))return;if(!t.plan&&t.due&&!same(t.due,d))return;chk('t'+t.id+iso(d),t.t,st,ROFF[t.rem],at(d,'23:59'))});
-  if(n==0)HA().forEach(h=>{if(!h.rem||!h.tm||h.d[34]==1)return;chk('h'+h.id+iso(d),h.n,at(d,h.tm),HOFF[h.rem],at(d,'23:59'))})});
+  if(n==0)HA().forEach(h=>{if(!h.rem||!h.tm||h.d[34]==1)return;chk('h'+h.id+iso(d),h.n,at(d,h.tm),HOFF[h.rem],at(d,'23:59'))});
+  if(n==0)RT.forEach(r=>{if(!r.rem||!r.tm||!rToday(r)||(rRunOf(r)||{s:0}).s!=0)return;chk('r'+r.id+iso(d),r.n,at(d,r.tm),0,at(d,'23:59'))})});
  Object.keys(FIRED).forEach(k=>{if(FIRED[k]<now-2592e5)delete FIRED[k]});
  if(msgs.length){save();toast('Recordatorio: '+esc(msgs.join(' · ')),null,9000);try{if('Notification' in window&&Notification.permission=='granted')new Notification('Áurea',{body:msgs.join('\n')})}catch(_){}}}
 let bc=null;try{bc=new BroadcastChannel('aurea');bc.onmessage=()=>{if(!ready||stale)return;stale=1;banner('Los datos cambiaron en otra ventana. Toca aquí para recargar Áurea.',()=>location.reload())}}catch(_){}

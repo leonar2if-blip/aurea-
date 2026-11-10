@@ -6,6 +6,7 @@
 // Es idempotente (se puede repetir) y falla de forma explícita si algo no encaja; no deja un APK a medias.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { ensureRegister } from './android-patch-main.mjs';
 
 const ROOT = process.env.AUREA_ANDROID_DIR || 'android'; // solo se cambia en pruebas
 const SRC = 'android-widgets';
@@ -25,17 +26,6 @@ if (appId !== 'com.leonar2if.aurea') {
 const javaDir = `${ROOT}/app/src/main/java/${appId.replace(/\./g, '/')}`;
 mkdirSync(javaDir, { recursive: true });
 
-// ---- MainActivity: solo se reemplaza si es la plantilla vacía de Capacitor (o ya es la nuestra) ----
-const mainPath = join(javaDir, 'MainActivity.java');
-if (existsSync(mainPath)) {
-  const cur = readFileSync(mainPath, 'utf8');
-  const isTemplate = /class\s+MainActivity\s+extends\s+BridgeActivity\s*\{\s*\}/.test(cur);
-  const isOurs = cur.includes('registerPlugin(AureaWidgetsPlugin.class)');
-  if (!isTemplate && !isOurs) {
-    throw new Error('MainActivity.java tiene cambios propios: añade registerPlugin(AureaWidgetsPlugin.class) antes de super.onCreate(...) a mano.');
-  }
-}
-
 // ---- código nativo ----
 let nJava = 0;
 for (const f of readdirSync(`${SRC}/java`)) {
@@ -44,6 +34,10 @@ for (const f of readdirSync(`${SRC}/java`)) {
   nJava++;
 }
 if (nJava < 10) throw new Error(`Se esperaban ≥10 archivos .java y hay ${nJava}`);
+
+// ---- MainActivity: solo se añade el registro del plugin (no se reemplaza el archivo) ----
+const mainPath = join(javaDir, 'MainActivity.java');
+ensureRegister(mainPath, 'AureaWidgetsPlugin');
 
 // ---- recursos ----
 let nRes = 0;
@@ -95,6 +89,6 @@ const count = (s, re) => (s.match(re) || []).length;
 if (count(out, /android\.appwidget\.provider/g) !== 12) throw new Error('Se esperaban 12 widgets en el manifiesto');
 if (count(out, /aurea-widgets:begin/g) !== 1 || count(out, /aurea-widgets:links:begin/g) !== 1) throw new Error('Bloques duplicados en el manifiesto');
 if (!out.includes('android:scheme="aurea"')) throw new Error('Falta el enlace profundo aurea://');
-if (!/package com\.leonar2if\.aurea;/.test(readFileSync(mainPath, 'utf8'))) throw new Error('MainActivity.java no quedó bien');
+if (!readFileSync(mainPath, 'utf8').includes('registerPlugin(AureaWidgetsPlugin.class);')) throw new Error('MainActivity.java no registra AureaWidgetsPlugin');
 
 console.log(`Widgets listos · ${nJava} clases Java · ${nRes} recursos · 12 widgets (7 principales + 5 opcionales) · enlace aurea://open/...`);

@@ -114,7 +114,8 @@ AW.push=push;
 
 /* ---------- deep links: aurea://open/<modulo>[/<id>] ---------- */
 function route(url){
-  try{var m=String(url||'').match(/^aurea:\/\/open\/([a-z]+)(?:\/(\d+))?/);if(!m)return false;var mod_=m[1],id=m[2]?+m[2]:0;
+  try{var m=String(url||'').match(/^aurea:\/\/open\/([a-z]+)(?:\/(\d+))?(?:\/(start))?/);if(!m)return false;var mod_=m[1],id=m[2]?+m[2]:0;
+    if(mod_==='routines'&&window.AureaRoutines){if(!id){openMod('routines');return true}if(!(m[3]?AureaRoutines.start(id):AureaRoutines.open(id))){openMod('routines');toast('Esa rutina ya no existe')}return true}
     var L={tasks:[T,'tasks','td'],habits:[H,'habits','hd'],cal:[E,'cal','ed'],projects:[PJ,'projects','pd'],goals:[GL,'stats','gl']}[mod_];
     if(L&&id){var i=L[0].findIndex(function(x){return x.id==id});
       if(i<0){openMod(L[1]);toast('Ese elemento ya no existe');return true}
